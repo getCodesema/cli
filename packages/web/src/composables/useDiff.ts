@@ -4,6 +4,7 @@
 export type Finding = {
   file: string
   line?: number
+  endLine?: number
   severity: string
   kind?: 'security' | 'perf' | 'convention' | 'design' | 'praise' | 'why'
   title?: string
