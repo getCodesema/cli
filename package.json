@@ -10,9 +10,13 @@
     "build": "bun run build:web && bun run build:cli",
     "build:web": "bun run --cwd packages/web build",
     "build:cli": "bun run --cwd packages/cli build",
-    "typecheck": "bun run --cwd packages/cli typecheck && bun run --cwd packages/web typecheck"
+    "typecheck": "bun run --cwd packages/cli typecheck && bun run --cwd packages/web typecheck",
+    "test": "bun test packages/cli packages/web"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14"
   }
 }
