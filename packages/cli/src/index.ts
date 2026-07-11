@@ -8,7 +8,9 @@ import { review } from './review.js'
 import { show } from './show.js'
 import { configCommand } from './wizard.js'
 
-const VERSION = '0.2.0'
+// Replaced at build time by tsdown (define) with the version from package.json.
+declare const __CODESEMA_VERSION__: string
+const VERSION = typeof __CODESEMA_VERSION__ !== 'undefined' ? __CODESEMA_VERSION__ : '0.0.0-dev'
 
 const HELP = `codesema — local merge request review, told as chapters
 
