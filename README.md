@@ -5,7 +5,7 @@
 [![node](https://img.shields.io/node/v/codesema)](https://nodejs.org)
 [![license](https://img.shields.io/npm/l/codesema)](LICENSE)
 
-Local merge request review, step by step. **Your** AI agent (Claude Code, Codex, …) does the review with the subscription you already pay for; `codesema` prepares the diff and displays the result in a local web UI. No account, no API key, no cloud: everything happens on your machine.
+Local merge request review, step by step. **Your** AI agent (Claude Code, Codex, …) does the review with the subscription you already pay for; `codesema` prepares the diff and displays the result in a local web UI. No account, no API key, no cloud: everything happens on your machine. Zero runtime dependencies: `npm install codesema` installs exactly one package, shipped unminified so you can audit the code that reads your diff.
 
 🌐 Website: **[codesema.com](https://codesema.com)** · 📦 npm: [`codesema`](https://www.npmjs.com/package/codesema)
 
