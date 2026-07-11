@@ -1,4 +1,5 @@
 import type { PartialReview } from './partial.js'
+import { VERSION, isNewerVersion } from './version.js'
 
 export const OCEAN = [24, 30, 36, 37, 43, 44, 50] as const
 
@@ -46,14 +47,20 @@ export function printBanner(): void {
   if (!isFancy()) return
   console.log('')
   if ((process.stdout.columns ?? 80) < BANNER[0]!.length + 4) {
-    console.log(`  ${paint('◆', ACCENT)} ${bold('codesema')}`)
+    console.log(`  ${paint('◆', ACCENT)} ${bold('codesema')} ${dim(`v${VERSION}`)}`)
     console.log('')
     return
   }
   BANNER.forEach((line, i) => {
-    console.log('  ' + paint(line, OCEAN[Math.min(1 + i, OCEAN.length - 1)]!))
+    const version = i === BANNER.length - 1 ? ` ${dim(`v${VERSION}`)}` : ''
+    console.log('  ' + paint(line, OCEAN[Math.min(1 + i, OCEAN.length - 1)]!) + version)
   })
   console.log('')
+}
+
+export function printUpdateNotice(latest: string | null): void {
+  if (!latest || !isNewerVersion(VERSION, latest)) return
+  console.log(`  ${paint(`update available: ${VERSION} => ${latest}`, AMBER)} ${dim('npm i -g codesema@latest')}`)
 }
 
 const WAVE_CHARS = '▁▂▃▄▅▆▇█'

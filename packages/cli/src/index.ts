@@ -6,11 +6,8 @@ import { tryGit } from './git.js'
 import { prep } from './prep.js'
 import { review } from './review.js'
 import { show } from './show.js'
+import { VERSION } from './version.js'
 import { configCommand } from './wizard.js'
-
-// Replaced at build time by tsdown (define) with the version from package.json.
-declare const __CODESEMA_VERSION__: string
-const VERSION = typeof __CODESEMA_VERSION__ !== 'undefined' ? __CODESEMA_VERSION__ : '0.0.0-dev'
 
 const HELP = `codesema — local merge request review, step by step
 
@@ -45,6 +42,9 @@ Options:
   -v, --version       Show version
 
 Config precedence: CLI flags > .codesema/config.json (repo) > ~/.config/codesema/config.json (global).
+
+\`review\` and \`show\` check the npm registry once at startup to tell you when a newer
+version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
 `
 
 function parseIntFlag(name: string, raw: string | undefined, min: number, max: number): number | undefined {

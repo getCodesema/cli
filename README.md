@@ -57,6 +57,8 @@ Interactive: agent → model → effort, then where to save. Two levels, field b
 
 CLI flags always win over both. `target`, `port` and `timeout` can also be set in either file.
 
+`review` and `show` check the npm registry once at startup (a read-only `dist-tags` lookup, nothing about you or your code is sent) to print a one-line notice when a newer version exists. Set `CODESEMA_NO_UPDATE_CHECK=1` to disable it; it is also skipped when stdout is not a terminal.
+
 ### Repo-provided agent approval
 
 An `agent` command coming from a repo's `.codesema/config.json` runs on your machine, in your shell. codesema asks for a one-time approval per repo (remembered in your global config) and asks again whenever the command changes. Non-interactive runs refuse an unapproved repo agent: approve it once in a terminal, or pass `--agent '<cmd>'` explicitly.

@@ -2,8 +2,11 @@ import { repoRoot } from './git.js'
 import { openBrowser } from './open.js'
 import { archiveRecord, resolveRecord } from './record.js'
 import { createSession, startServer } from './serve.js'
+import { printUpdateNotice } from './ui.js'
+import { startUpdateCheck } from './version.js'
 
 export async function show(opts: { review?: string; port?: number; open: boolean; cwd: string }): Promise<void> {
+  const latestVersion = startUpdateCheck()
   const cwd = repoRoot(opts.cwd)
 
   const { record, fresh, sourcePath } = resolveRecord({ review: opts.review, cwd })
@@ -20,4 +23,5 @@ export async function show(opts: { review?: string; port?: number; open: boolean
   console.log(`  ${url}`)
   console.log('  Ctrl+C to stop')
   if (opts.open) openBrowser(url)
+  printUpdateNotice(await latestVersion)
 }

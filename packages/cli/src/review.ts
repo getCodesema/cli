@@ -15,7 +15,8 @@ import type { LiveSession } from './serve.js'
 import { createSession, startServer } from './serve.js'
 import { printReviewSummary } from './summary.js'
 import { isInteractive, select } from './tui.js'
-import { ACCENT, GREEN, RED, bold, dim, fieldLabel, paint, printBanner, progressLabel, startSpinner, underline } from './ui.js'
+import { ACCENT, GREEN, RED, bold, dim, fieldLabel, paint, printBanner, printUpdateNotice, progressLabel, startSpinner, underline } from './ui.js'
+import { startUpdateCheck } from './version.js'
 import { AGENT_DEFS, defaultCommand, detectAgents, runOnboarding } from './wizard.js'
 
 const REVIEW_INSTRUCTIONS = `You are a senior code reviewer. Review the merge request provided in the <input> block below (JSON: branch, target, commits, files, and the full unified diff). Do NOT use any tools; base your review ONLY on the provided input. Then output the review as a single JSON object and NOTHING else (no prose, no code fences).
@@ -221,6 +222,7 @@ export async function review(opts: {
   cwd: string
 }): Promise<void> {
   printBanner()
+  const latestVersion = startUpdateCheck()
   const cwd = repoRoot(opts.cwd)
   const config = loadConfig(cwd)
 
@@ -340,6 +342,7 @@ export async function review(opts: {
   console.log(`  ${fieldLabel('web')}${underline(paint(url, ACCENT))}`)
   console.log(`  ${dim(`archived: ${savedPath}`)}`)
   console.log(`  ${dim('Ctrl+C to stop')}`)
+  printUpdateNotice(await latestVersion)
   if (isInteractive()) {
     notifyDesktop('codesema', `review ready · ${findingsCount} finding${findingsCount === 1 ? '' : 's'} · ${record.review.verdict}`)
   }
