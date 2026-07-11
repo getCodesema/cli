@@ -1,4 +1,4 @@
-// Types du record servi par `mr-review show` (/api/review).
+// Types du record servi par `codesema show` (/api/review).
 // Miroir du contrat CLI (packages/cli/src/contract.ts).
 
 import type { Finding } from './composables/useDiff'

@@ -1,4 +1,4 @@
-// `mr-review show` : sanitize la sortie de l'agent, archive la review en JSON,
+// `codesema show` : sanitize la sortie de l'agent, archive la review en JSON,
 // sert l'UI web embarquée sur un serveur local éphémère et ouvre le navigateur.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -39,7 +39,7 @@ async function listen(app: Hono, startPort: number): Promise<number> {
 
 export async function show(opts: { review?: string; port?: number; open: boolean; cwd: string }): Promise<void> {
   const cwd = repoRoot(opts.cwd)
-  const dir = join(cwd, '.mr-review')
+  const dir = join(cwd, '.codesema')
 
   const { record, fresh, sourcePath } = resolveRecord({ review: opts.review, cwd })
   if (fresh) {
@@ -65,7 +65,7 @@ export async function show(opts: { review?: string; port?: number; open: boolean
   const port = await listen(app, opts.port ?? 4400)
   const url = `http://localhost:${port}`
   console.log('')
-  console.log(`mr-review — ${record.meta.branch} → ${record.meta.target}`)
+  console.log(`codesema — ${record.meta.branch} → ${record.meta.target}`)
   console.log(`  ${url}`)
   console.log('  Ctrl+C to stop')
   if (opts.open) openBrowser(url)

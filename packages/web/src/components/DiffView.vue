@@ -20,7 +20,7 @@ const isClient = typeof window !== 'undefined'
 
 // ── Toggle split / unifié (préférence globale, persistée localStorage) ───────
 
-const SPLIT_KEY = 'mr-review-diff-mode'
+const SPLIT_KEY = 'codesema-diff-mode'
 
 function loadMode(): 'split' | 'unified' {
   if (!isClient) return 'unified'

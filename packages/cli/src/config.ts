@@ -1,4 +1,4 @@
-// Config persistante par repo : .mr-review/config.json.
+// Config persistante par repo : .codesema/config.json.
 // Priorité partout : flag CLI > config > détection/défaut.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -16,7 +16,7 @@ export type RepoConfig = {
 }
 
 export function loadConfig(repoRoot: string): RepoConfig {
-  const path = join(repoRoot, '.mr-review', 'config.json')
+  const path = join(repoRoot, '.codesema', 'config.json')
   if (!existsSync(path)) return {}
   try {
     const raw = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
@@ -31,9 +31,9 @@ export function loadConfig(repoRoot: string): RepoConfig {
   }
 }
 
-/** Crée .mr-review/ avec son .gitignore auto (aucun impact sur le repo hôte). */
+/** Crée .codesema/ avec son .gitignore auto (aucun impact sur le repo hôte). */
 export function ensureWorkDir(repoRoot: string): string {
-  const dir = join(repoRoot, '.mr-review')
+  const dir = join(repoRoot, '.codesema')
   mkdirSync(dir, { recursive: true })
   const selfIgnore = join(dir, '.gitignore')
   if (!existsSync(selfIgnore)) writeFileSync(selfIgnore, '*\n')

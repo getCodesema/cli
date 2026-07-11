@@ -1,4 +1,4 @@
-// `mr-review review` : tout-en-un. prep → agent IA headless (claude -p par défaut,
+// `codesema review` : tout-en-un. prep → agent IA headless (claude -p par défaut,
 // l'abonnement de l'utilisateur, aucun LLM embarqué) → review.json → show.
 
 import { spawn } from 'node:child_process'
@@ -164,7 +164,7 @@ export function extractReviewJson(raw: string): string {
     fallback ??= candidate
   }
   if (fallback) return fallback
-  throw new Error('the agent did not return a JSON review (raw output saved to .mr-review/agent-output.txt)')
+  throw new Error('the agent did not return a JSON review (raw output saved to .codesema/agent-output.txt)')
 }
 
 /** Candidats par priorité : sortie entière, contenu des fences, chaque objet {…} balancé. */
@@ -213,7 +213,7 @@ export async function review(opts: {
   const input = prep({ target: opts.target, cwd: opts.cwd })
 
   const cwd = input.repo_root
-  const dir = join(cwd, '.mr-review')
+  const dir = join(cwd, '.codesema')
 
   let agentCommand = opts.agent
   if (!agentCommand) {
@@ -224,7 +224,7 @@ export async function review(opts: {
       if (chosen) {
         agentCommand = chosen
         saveConfig(cwd, { ...loadConfig(cwd), agent: chosen })
-        console.log('saved to .mr-review/config.json — reused next time (change it with `mr-review config`)')
+        console.log('saved to .codesema/config.json — reused next time (change it with `codesema config`)')
       }
     }
     agentCommand ??= detectAgent(cwd)

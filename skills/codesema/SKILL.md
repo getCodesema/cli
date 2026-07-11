@@ -1,11 +1,11 @@
 ---
-name: mr-review
-description: Review the current branch's merge request locally, as a guided story (prologue, chapters, findings), displayed in a local web UI. Use when the user asks to review their MR/PR/branch, to "relire ma MR", or invokes /mr-review.
+name: codesema
+description: Review the current branch's merge request locally, as a guided story (prologue, chapters, findings), displayed in a local web UI. Use when the user asks to review their MR/PR/branch, to "relire ma MR", or invokes /codesema.
 ---
 
-# mr-review — local MR review, told as chapters
+# codesema — local MR review, told as chapters
 
-You are going to review the user's current branch like a senior code reviewer, then display the result in a local web UI. Everything happens on the user's machine; you are the reviewer, the `mr-review` CLI only prepares the diff and renders your review.
+You are going to review the user's current branch like a senior code reviewer, then display the result in a local web UI. Everything happens on the user's machine; you are the reviewer, the `codesema` CLI only prepares the diff and renders your review.
 
 ## Workflow
 
@@ -14,21 +14,21 @@ You are going to review the user's current branch like a senior code reviewer, t
 Run, at the repository root:
 
 ```bash
-mr-review prep
+codesema prep
 ```
 
-If the command is not on PATH, use `npx -y mr-review@latest prep` instead (or, in a development checkout of the mr-review repo, `node packages/cli/dist/index.mjs prep`).
+If the command is not on PATH, use `npx -y codesema@latest prep` instead (or, in a development checkout of the codesema repo, `node packages/cli/dist/index.mjs prep`).
 
-This auto-detects the current branch and the target branch, computes the MR diff, and writes `.mr-review/input.json`. If it fails because the target branch cannot be detected, ask the user for the target branch and re-run with `--target <branch>`.
+This auto-detects the current branch and the target branch, computes the MR diff, and writes `.codesema/input.json`. If it fails because the target branch cannot be detected, ask the user for the target branch and re-run with `--target <branch>`.
 
 ### Step 2 — Read the input
 
-Read `.mr-review/input.json`. It contains:
+Read `.codesema/input.json`. It contains:
 
 - `title`, `branch`, `target`, `merge_base`, `commits`: context about the MR.
 - `files`: the changed files with additions/deletions counts.
 - `diff`: the full unified diff. Line numbers for findings MUST be **new-file line numbers**, derived from the `@@ -a,b +c,d @@` hunk headers.
-- `custom_instructions`: the team's own review instructions (from `.mr-review/PROMPT.md`), or null. When present, apply them on top of the guidelines below; they win on conflicts.
+- `custom_instructions`: the team's own review instructions (from `.codesema/PROMPT.md`), or null. When present, apply them on top of the guidelines below; they win on conflicts.
 
 If the diff is very large, read the file in chunks rather than loading it all at once.
 
@@ -77,7 +77,7 @@ Language: write ALL human-readable output (summary, finding messages, the whole 
 
 ### Step 4 — Write the review
 
-Write the complete review as a single JSON object to `.mr-review/review.json`:
+Write the complete review as a single JSON object to `.codesema/review.json`:
 
 ```json
 {
@@ -105,7 +105,7 @@ Write the complete review as a single JSON object to `.mr-review/review.json`:
 Run in the background (the server stays up until the user stops it):
 
 ```bash
-mr-review show
+codesema show
 ```
 
 It archives the review, starts a local web server and opens the browser. Report the URL it prints to the user, along with your verdict and a 2-3 sentence summary of what you found.

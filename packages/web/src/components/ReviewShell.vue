@@ -124,7 +124,7 @@ const otherFiles = computed(() => {
 
 // ── Onglet Fichiers : split/unifié + replier + scroll-to-file ──
 
-const FILES_SPLIT_KEY = 'mr-review-diff-mode'
+const FILES_SPLIT_KEY = 'codesema-diff-mode'
 
 const filesDiffMode = ref<'split' | 'unified'>(
   isClient ? ((localStorage.getItem(FILES_SPLIT_KEY) as 'split' | 'unified') ?? 'unified') : 'unified',

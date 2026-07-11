@@ -1,5 +1,5 @@
 // Résolution du ReviewRecord consommé par `show` et `export` : sortie agent
-// fraîche (.mr-review/review.json ou --review) sinon dernière review archivée.
+// fraîche (.codesema/review.json ou --review) sinon dernière review archivée.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -19,7 +19,7 @@ export function readJson(path: string): unknown {
 function buildRecord(agentOutputPath: string, dir: string): ReviewRecord {
   const inputPath = join(dir, 'input.json')
   if (!existsSync(inputPath)) {
-    throw new Error('.mr-review/input.json not found — run `mr-review prep` first')
+    throw new Error('.codesema/input.json not found — run `codesema prep` first')
   }
   const input = readJson(inputPath) as PrepInput
   const review = sanitizeReview(readJson(agentOutputPath))
@@ -51,7 +51,7 @@ function latestSavedRecord(reviewsDir: string): { record: ReviewRecord; path: st
 
 /** Dernière review archivée de cette branche vers cette cible, avec head_sha connu. */
 export function findPreviousReview(cwd: string, branch: string, target: string): ReviewRecord | null {
-  const reviewsDir = join(cwd, '.mr-review', 'reviews')
+  const reviewsDir = join(cwd, '.codesema', 'reviews')
   if (!existsSync(reviewsDir)) return null
   const names = readdirSync(reviewsDir).filter((n) => n.endsWith('.json')).sort().reverse()
   for (const name of names) {
@@ -75,7 +75,7 @@ export type ResolvedRecord = {
 }
 
 export function resolveRecord(opts: { review?: string; cwd: string }): ResolvedRecord {
-  const dir = join(opts.cwd, '.mr-review')
+  const dir = join(opts.cwd, '.codesema')
   const freshPath = opts.review ?? join(dir, 'review.json')
   if (existsSync(freshPath)) {
     return { record: buildRecord(freshPath, dir), fresh: true, sourcePath: freshPath }
@@ -85,7 +85,7 @@ export function resolveRecord(opts: { review?: string; cwd: string }): ResolvedR
   }
   const latest = latestSavedRecord(join(dir, 'reviews'))
   if (!latest) {
-    throw new Error('no review to show — run `mr-review prep`, let your agent write .mr-review/review.json, then retry')
+    throw new Error('no review to show — run `codesema prep`, let your agent write .codesema/review.json, then retry')
   }
   return { record: latest.record, fresh: false, sourcePath: latest.path }
 }

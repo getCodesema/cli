@@ -1,5 +1,5 @@
-// `mr-review prep` : détecte la branche courante et la branche cible, calcule le
-// diff de la MR, et écrit .mr-review/input.json pour l'agent IA.
+// `codesema prep` : détecte la branche courante et la branche cible, calcule le
+// diff de la MR, et écrit .codesema/input.json pour l'agent IA.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -110,7 +110,7 @@ export function detectTarget(current: string, flag: string | undefined, cwd: str
 
 function excludePathspecs(cwd: string): string[] {
   const patterns = [...DEFAULT_EXCLUDES]
-  const ignoreFile = join(cwd, '.mr-review-ignore')
+  const ignoreFile = join(cwd, '.codesema-ignore')
   if (existsSync(ignoreFile)) {
     for (const raw of readFileSync(ignoreFile, 'utf8').split('\n')) {
       const line = raw.trim()
@@ -121,7 +121,7 @@ function excludePathspecs(cwd: string): string[] {
   return patterns.map((p) => (p.includes('/') ? `:(exclude,glob)${p}` : `:(exclude,glob)**/${p}`))
 }
 
-/** Diff MR sur un range, mêmes exclusions que prep (lockfiles, .mr-review-ignore).
+/** Diff MR sur un range, mêmes exclusions que prep (lockfiles, .codesema-ignore).
  *  quotePath=false : sans lui, git échappe les chemins non-ASCII ("caf\303\251.txt")
  *  et le matching finding↔fichier casse dans l'UI. */
 export function mrDiff(range: string, cwd: string): string {
@@ -154,7 +154,7 @@ export function prep(opts: { target?: string; cwd: string }): PrepInput {
   if (!diff.trim()) {
     const dirty = tryGit(['status', '--porcelain'], cwd)
     const hint = dirty?.trim()
-      ? ' Your working tree has uncommitted changes: commit them first, mr-review reviews committed work.'
+      ? ' Your working tree has uncommitted changes: commit them first, codesema reviews committed work.'
       : ''
     throw new Error(`empty diff between ${target} and ${branch} — nothing to review.${hint}`)
   }
@@ -175,12 +175,12 @@ export function prep(opts: { target?: string; cwd: string }): PrepInput {
       }
     })
 
-  const promptFile = join(cwd, '.mr-review', 'PROMPT.md')
+  const promptFile = join(cwd, '.codesema', 'PROMPT.md')
   const custom = existsSync(promptFile) ? readFileSync(promptFile, 'utf8').trim() || null : null
 
   const input: PrepInput = {
     version: 1,
-    generated_by: 'mr-review prep',
+    generated_by: 'codesema prep',
     title: branch,
     branch,
     target,
@@ -200,14 +200,14 @@ export function prep(opts: { target?: string; cwd: string }): PrepInput {
 
   const additions = files.reduce((n, f) => n + f.additions, 0)
   const deletions = files.reduce((n, f) => n + f.deletions, 0)
-  console.log('mr-review prep')
+  console.log('codesema prep')
   console.log(`  branch : ${branch}`)
   console.log(`  target : ${target} (${source})`)
   console.log(`  files  : ${files.length} (+${additions} −${deletions})`)
   console.log(`  commits: ${commits.length}`)
-  if (custom) console.log('  custom : .mr-review/PROMPT.md merged into instructions')
+  if (custom) console.log('  custom : .codesema/PROMPT.md merged into instructions')
   console.log(`  input  : ${inputPath}`)
   console.log('')
-  console.log('Next: have your AI agent write .mr-review/review.json (see the mr-review skill), then run `mr-review show`.')
+  console.log('Next: have your AI agent write .codesema/review.json (see the codesema skill), then run `codesema show`.')
   return input
 }

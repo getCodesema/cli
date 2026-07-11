@@ -1,7 +1,7 @@
 node_modules/
 dist/
 web-dist/
-.mr-review/
+.codesema/
 *.log
 .DS_Store
 

@@ -5,7 +5,7 @@ import { ref } from 'vue'
 const isClient = typeof window !== 'undefined'
 
 export function useReviewProgress(reviewId: string) {
-  const storageKey = `mr-review-progress:${reviewId}`
+  const storageKey = `codesema-progress:${reviewId}`
 
   // ── Helpers lecture/écriture localStorage ──────────────────
 

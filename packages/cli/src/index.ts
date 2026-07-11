@@ -10,25 +10,25 @@ import { configCommand } from './wizard.js'
 
 const VERSION = '0.1.0'
 
-const HELP = `mr-review — local merge request review, told as chapters
+const HELP = `codesema — local merge request review, told as chapters
 
 Usage:
-  mr-review review [--target <branch>] [--agent <cmd>] [--port <n>] [--timeout <s>] [--full] [--no-open]
+  codesema review [--target <branch>] [--agent <cmd>] [--port <n>] [--timeout <s>] [--full] [--no-open]
                                        All-in-one: prep, review with your AI agent CLI, then show.
                                        Re-runs on the same branch update the previous review
                                        incrementally; --full forces a review from scratch
-  mr-review prep [--target <branch>]   Detect branches, compute the MR diff, write .mr-review/input.json
-  mr-review show [--review <file>] [--port <n>] [--no-open]
+  codesema prep [--target <branch>]   Detect branches, compute the MR diff, write .codesema/input.json
+  codesema show [--review <file>] [--port <n>] [--no-open]
                                        Display the review (agent output) in a local web UI
-  mr-review config                     Pick the AI agent, model and effort for this repo (interactive)
-  mr-review export [--review <file>] [--out <file>]
+  codesema config                     Pick the AI agent, model and effort for this repo (interactive)
+  codesema export [--review <file>] [--out <file>]
                                        Export the review as Markdown (--out - for stdout)
 
 Options:
   --target <branch>   Target branch of the MR (default: auto-detected via glab/gh, origin/HEAD, then heuristic)
   --agent <cmd>       Agent command for one-shot review (default: "claude -p"). Receives the prompt on stdin,
                       must print the review JSON on stdout
-  --review <file>     Agent output to display (default: .mr-review/review.json, else last archived review)
+  --review <file>     Agent output to display (default: .codesema/review.json, else last archived review)
   --port <n>          Preferred port for the local server (default: 4400)
   --timeout <s>       Agent time budget in seconds for \`review\` (default: 900)
   --no-open           Do not open the browser
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     return
   }
 
-  // Config du repo (.mr-review/config.json) : flags CLI prioritaires partout.
+  // Config du repo (.codesema/config.json) : flags CLI prioritaires partout.
   const repoRoot = tryGit(['rev-parse', '--show-toplevel'], process.cwd())
   const config = repoRoot ? loadConfig(repoRoot) : {}
 
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
       })
       break
     case 'config':
-      if (!repoRoot) throw new Error('not inside a git repository — run `mr-review config` from your repo')
+      if (!repoRoot) throw new Error('not inside a git repository — run `codesema config` from your repo')
       await configCommand(repoRoot)
       break
     case 'export':
@@ -114,6 +114,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error(`mr-review: ${err instanceof Error ? err.message : String(err)}`)
+  console.error(`codesema: ${err instanceof Error ? err.message : String(err)}`)
   process.exit(1)
 })

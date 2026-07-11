@@ -20,7 +20,7 @@ function commitFile(name: string, content: string, msg: string) {
 // Repo : main (2 commits) → develop (1 commit) → feature/x (1 commit).
 // develop est le merge-base le plus proche de la feature.
 beforeAll(() => {
-  repo = mkdtempSync(join(tmpdir(), 'mr-review-test-'))
+  repo = mkdtempSync(join(tmpdir(), 'codesema-test-'))
   run(['init', '-b', 'main'])
   commitFile('base.txt', 'a\n', 'init: base')
   commitFile('base.txt', 'a\nb\n', 'chore: main grows')

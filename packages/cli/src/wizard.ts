@@ -139,7 +139,7 @@ export async function runAgentWizard(cwd: string): Promise<string | null> {
   }
 }
 
-/** `mr-review config` : lance le wizard et persiste le résultat. */
+/** `codesema config` : lance le wizard et persiste le résultat. */
 export async function configCommand(repoRoot: string): Promise<void> {
   const command = await runAgentWizard(repoRoot)
   if (!command) return

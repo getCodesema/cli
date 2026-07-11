@@ -1,7 +1,7 @@
 {
-  "name": "mr-review",
+  "name": "codesema",
   "version": "0.1.0",
-  "description": "Local merge request review, told as chapters. Your AI agent reviews, mr-review displays.",
+  "description": "Local merge request review, told as chapters. Your AI agent reviews, codesema displays.",
   "license": "MIT",
   "author": "Hasan TASKIN",
   "keywords": [
@@ -16,7 +16,7 @@
   ],
   "type": "module",
   "bin": {
-    "mr-review": "./dist/index.mjs"
+    "codesema": "./dist/index.mjs"
   },
   "files": [
     "dist",

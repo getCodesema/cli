@@ -1,4 +1,4 @@
-// `mr-review export` : rend la review courante (ou la dernière archivée) en
+// `codesema export` : rend la review courante (ou la dernière archivée) en
 // Markdown lisible — partageable dans une MR, un ticket ou un chat d'équipe.
 
 import { writeFileSync } from 'node:fs'
