@@ -46,11 +46,14 @@ Or run everything in one shot from your feature branch (uses your local `claude`
 npx -y mr-review review
 ```
 
-The two underlying steps are also available separately (this is what the skill flow uses):
+Re-running `review` on the same branch reviews **incrementally**: the agent gets the previous review plus the diff since it, and updates it (pass `--full` to review from scratch).
+
+The two underlying steps are also available separately (this is what the skill flow uses), plus a Markdown export:
 
 ```bash
 npx -y mr-review prep
 npx -y mr-review show
+npx -y mr-review export --out review.md   # or --out - for stdout
 ```
 
 ## Customize
