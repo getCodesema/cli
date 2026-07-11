@@ -2,9 +2,9 @@
 // l'abonnement de l'utilisateur, aucun LLM embarqué) → review.json → show.
 
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { repoRoot, tryExec } from './git.js'
+import { tryExec } from './git.js'
 import { prep } from './prep.js'
 import { show } from './show.js'
 import { printBanner, startSpinner } from './ui.js'
@@ -70,69 +70,124 @@ function detectAgent(cwd: string): string {
   )
 }
 
-function runAgent(command: string, prompt: string, cwd: string): Promise<string> {
+function runAgent(command: string, prompt: string, cwd: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, { shell: true, cwd, stdio: ['pipe', 'pipe', 'inherit'] })
+    // detached (hors Windows) : l'agent tourne dans son propre groupe de process,
+    // le timeout peut donc tuer le shell ET ses enfants d'un seul kill(-pid).
+    const detached = process.platform !== 'win32'
+    const child = spawn(command, { shell: true, cwd, stdio: ['pipe', 'pipe', 'inherit'], detached })
     let out = ''
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      try {
+        if (detached && child.pid) process.kill(-child.pid, 'SIGTERM')
+        else child.kill('SIGTERM')
+      } catch {
+        // groupe déjà terminé
+      }
+    }, timeoutMs)
     child.stdout.on('data', (d: Buffer) => {
       out += d.toString()
     })
-    child.on('error', reject)
+    child.on('error', (err) => {
+      clearTimeout(timer)
+      reject(err)
+    })
     child.on('close', (code) => {
-      if (code === 0) resolve(out)
+      clearTimeout(timer)
+      if (timedOut) {
+        reject(new Error(`agent timed out after ${Math.round(timeoutMs / 1000)}s — raise it with --timeout <seconds>`))
+      } else if (code === 0) resolve(out)
       else reject(new Error(`agent command exited with code ${code}`))
     })
+    // un agent qui crashe ferme stdin tôt : sans handler, l'EPIPE tuerait tout le process
+    child.stdin.on('error', () => {})
     child.stdin.write(prompt)
     child.stdin.end()
   })
 }
 
 /** Extrait l'objet JSON de la sortie agent (tolère fences et prose autour). */
-function extractReviewJson(raw: string): string {
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start < 0 || end <= start) {
-    throw new Error('the agent did not return a JSON review (raw output saved to .mr-review/agent-output.txt)')
+export function extractReviewJson(raw: string): string {
+  let fallback: string | null = null
+  for (const candidate of jsonCandidates(raw.trim())) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(candidate)
+    } catch {
+      continue
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue
+    if ('verdict' in (parsed as Record<string, unknown>)) return candidate
+    fallback ??= candidate
   }
-  const candidate = raw.slice(start, end + 1)
-  try {
-    JSON.parse(candidate)
-  } catch {
-    throw new Error('the agent returned invalid JSON (raw output saved to .mr-review/agent-output.txt)')
-  }
-  return candidate
+  if (fallback) return fallback
+  throw new Error('the agent did not return a JSON review (raw output saved to .mr-review/agent-output.txt)')
 }
+
+/** Candidats par priorité : sortie entière, contenu des fences, chaque objet {…} balancé. */
+function* jsonCandidates(s: string): Generator<string> {
+  yield s
+  for (const m of s.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)) {
+    if (m[1]) yield m[1].trim()
+  }
+  for (let i = s.indexOf('{'); i >= 0; i = s.indexOf('{', i + 1)) {
+    const end = balancedEnd(s, i)
+    if (end > i) yield s.slice(i, end + 1)
+  }
+}
+
+/** Index de la '}' fermant l'objet ouvert à `start`, en respectant strings et échappements. */
+function balancedEnd(s: string, start: number): number {
+  let depth = 0
+  let inString = false
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i]
+    if (inString) {
+      if (ch === '\\') i++
+      else if (ch === '"') inString = false
+    } else if (ch === '"') inString = true
+    else if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+const DEFAULT_TIMEOUT_S = 900
 
 export async function review(opts: {
   target?: string
   agent?: string
   port?: number
+  timeout?: number
   open: boolean
   cwd: string
 }): Promise<void> {
   printBanner()
-  prep({ target: opts.target, cwd: opts.cwd })
+  const input = prep({ target: opts.target, cwd: opts.cwd })
 
-  const cwd = repoRoot(opts.cwd)
+  const cwd = input.repo_root
   const dir = join(cwd, '.mr-review')
-  const input = readFileSync(join(dir, 'input.json'), 'utf8')
 
   const agentCommand = opts.agent ?? detectAgent(cwd)
   console.log('')
   const shortCmd = agentCommand.length > 40 ? `${agentCommand.slice(0, 37)}…` : agentCommand
   const spinner = startSpinner(`reviewing with ${shortCmd}`)
 
-  const prompt = `${REVIEW_INSTRUCTIONS}\n\n<input>\n${input}\n</input>\n\nOutput ONLY the JSON object now.`
+  const prompt = `${REVIEW_INSTRUCTIONS}\n\n<input>\n${JSON.stringify(input, null, 2)}\n</input>\n\nOutput ONLY the JSON object now.`
 
   let out: string
   try {
-    out = await runAgent(agentCommand, prompt, cwd)
+    out = await runAgent(agentCommand, prompt, cwd, (opts.timeout ?? DEFAULT_TIMEOUT_S) * 1000)
   } catch (err) {
     spinner.stop('  ✘ agent run failed')
     throw new Error(`agent run failed: ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  mkdirSync(dir, { recursive: true })
   let json: string
   try {
     json = extractReviewJson(out)

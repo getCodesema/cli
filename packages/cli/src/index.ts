@@ -9,7 +9,7 @@ const VERSION = '0.1.0'
 const HELP = `mr-review — local merge request review, told as chapters
 
 Usage:
-  mr-review review [--target <branch>] [--agent <cmd>] [--port <n>] [--no-open]
+  mr-review review [--target <branch>] [--agent <cmd>] [--port <n>] [--timeout <s>] [--no-open]
                                        All-in-one: prep, review with your AI agent CLI, then show
   mr-review prep [--target <branch>]   Detect branches, compute the MR diff, write .mr-review/input.json
   mr-review show [--review <file>] [--port <n>] [--no-open]
@@ -21,10 +21,20 @@ Options:
                       must print the review JSON on stdout
   --review <file>     Agent output to display (default: .mr-review/review.json, else last archived review)
   --port <n>          Preferred port for the local server (default: 4400)
+  --timeout <s>       Agent time budget in seconds for \`review\` (default: 900)
   --no-open           Do not open the browser
   -h, --help          Show this help
   -v, --version       Show version
 `
+
+function parseIntFlag(name: string, raw: string | undefined, min: number, max: number): number | undefined {
+  if (raw === undefined) return undefined
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < min || n > max) {
+    throw new Error(`--${name} ${raw}: expected an integer between ${min} and ${max}`)
+  }
+  return n
+}
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -34,6 +44,7 @@ async function main(): Promise<void> {
       agent: { type: 'string' },
       review: { type: 'string' },
       port: { type: 'string' },
+      timeout: { type: 'string' },
       'no-open': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -55,7 +66,8 @@ async function main(): Promise<void> {
       await review({
         target: values.target,
         agent: values.agent,
-        port: values.port ? Number(values.port) : undefined,
+        port: parseIntFlag('port', values.port, 1, 65535),
+        timeout: parseIntFlag('timeout', values.timeout, 1, 86400),
         open: !values['no-open'],
         cwd: process.cwd(),
       })
@@ -66,7 +78,7 @@ async function main(): Promise<void> {
     case 'show':
       await show({
         review: values.review,
-        port: values.port ? Number(values.port) : undefined,
+        port: parseIntFlag('port', values.port, 1, 65535),
         open: !values['no-open'],
         cwd: process.cwd(),
       })

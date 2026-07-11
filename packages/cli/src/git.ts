@@ -1,13 +1,20 @@
 import { execFileSync } from 'node:child_process'
 
 export function git(args: string[], cwd: string): string {
-  // stderr capturé (pas hérité) : les sondes qui échouent ne polluent pas la sortie
-  return execFileSync('git', args, {
-    cwd,
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trimEnd()
+  try {
+    // stderr capturé (pas hérité) : les sondes qui échouent ne polluent pas la sortie
+    return execFileSync('git', args, {
+      cwd,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trimEnd()
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error('git not found on PATH — install git (https://git-scm.com) and retry')
+    }
+    throw err
+  }
 }
 
 export function tryGit(args: string[], cwd: string): string | null {

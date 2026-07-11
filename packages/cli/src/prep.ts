@@ -119,7 +119,7 @@ function excludePathspecs(cwd: string): string[] {
   return patterns.map((p) => (p.includes('/') ? `:(exclude,glob)${p}` : `:(exclude,glob)**/${p}`))
 }
 
-export function prep(opts: { target?: string; cwd: string }): void {
+export function prep(opts: { target?: string; cwd: string }): PrepInput {
   const cwd = repoRoot(opts.cwd)
   const branch = currentBranch(cwd)
   if (branch === 'HEAD') {
@@ -140,7 +140,9 @@ export function prep(opts: { target?: string; cwd: string }): void {
 
   const excludes = excludePathspecs(cwd)
   const range = `${target}...HEAD`
-  const diff = git(['diff', '--no-color', range, '--', '.', ...excludes], cwd)
+  // quotePath=false : sans lui, git échappe les chemins non-ASCII ("caf\303\251.txt")
+  // et le matching finding↔fichier casse dans l'UI.
+  const diff = git(['-c', 'core.quotePath=false', 'diff', '--no-color', range, '--', '.', ...excludes], cwd)
   if (!diff.trim()) {
     const dirty = tryGit(['status', '--porcelain'], cwd)
     const hint = dirty?.trim()
@@ -153,7 +155,7 @@ export function prep(opts: { target?: string; cwd: string }): void {
     .split('\n')
     .filter(Boolean)
 
-  const files = (tryGit(['diff', '--numstat', range, '--', '.', ...excludes], cwd) ?? '')
+  const files = (tryGit(['-c', 'core.quotePath=false', 'diff', '--numstat', range, '--', '.', ...excludes], cwd) ?? '')
     .split('\n')
     .filter(Boolean)
     .map((line) => {
@@ -202,4 +204,5 @@ export function prep(opts: { target?: string; cwd: string }): void {
   console.log(`  input  : ${inputPath}`)
   console.log('')
   console.log('Next: have your AI agent write .mr-review/review.json (see the mr-review skill), then run `mr-review show`.')
+  return input
 }

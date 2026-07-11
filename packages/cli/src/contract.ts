@@ -25,7 +25,7 @@ export type NarrativeChapter = {
   check?: string | null
 }
 
-export type ReviewFirstRisk = 'high' | 'medium' | 'low'
+export type ReviewFirstRisk = NarrativeRisk
 
 export type ReviewFirstItem = {
   point: string
