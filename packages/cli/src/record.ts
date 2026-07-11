@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ReviewRecord } from './contract.js'
-import { sanitizeRecord, sanitizeReview } from './contract.js'
-import type { PrepInput } from './prep.js'
+import { sanitizeRecord } from './contract.js'
+
+const ARCHIVES_KEPT_PER_BRANCH = 5
 
 function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'review'
@@ -13,11 +14,27 @@ function stamp(d: Date): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
 }
 
+/**
+ * Archive names are `<slug>-<stamp>.json`; matching on the fixed stamp shape keeps
+ * branch "feat" from swallowing "feat-x" archives (both start with "feat-").
+ */
+function archiveNames(reviewsDir: string, slugged: string): string[] {
+  const stampTail = /^\d{8}-\d{6}\.json$/
+  return readdirSync(reviewsDir)
+    .filter((n) => n.startsWith(`${slugged}-`) && stampTail.test(n.slice(slugged.length + 1)))
+    .sort()
+}
+
 export function archiveRecord(record: ReviewRecord, cwd: string): string {
   const reviewsDir = join(cwd, '.codesema', 'reviews')
   mkdirSync(reviewsDir, { recursive: true })
-  const savedPath = join(reviewsDir, `${slug(record.meta.branch)}-${stamp(new Date())}.json`)
+  const slugged = slug(record.meta.branch)
+  const savedPath = join(reviewsDir, `${slugged}-${stamp(new Date())}.json`)
   writeFileSync(savedPath, JSON.stringify(record, null, 2))
+  const names = archiveNames(reviewsDir, slugged)
+  for (const name of names.slice(0, Math.max(0, names.length - ARCHIVES_KEPT_PER_BRANCH))) {
+    unlinkSync(join(reviewsDir, name))
+  }
   return savedPath
 }
 
@@ -35,23 +52,21 @@ function buildRecord(agentOutputPath: string, dir: string): ReviewRecord {
   if (!existsSync(inputPath)) {
     throw new Error('.codesema/input.json not found — run `codesema prep` first')
   }
-  const input = readJson(inputPath) as PrepInput
-  const review = sanitizeReview(readJson(agentOutputPath))
-  return {
-    version: 1,
+  const raw = readJson(inputPath)
+  const input = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return sanitizeRecord({
     meta: {
       title: input.title,
       branch: input.branch,
       target: input.target,
       merge_base: input.merge_base,
-      ...(input.head_sha ? { head_sha: input.head_sha } : {}),
+      head_sha: input.head_sha,
       repo_root: input.repo_root,
-      created_at: new Date().toISOString(),
     },
-    commits: input.commits ?? [],
-    diff: input.diff ?? '',
-    review,
-  }
+    commits: input.commits,
+    diff: input.diff,
+    review: readJson(agentOutputPath),
+  })!
 }
 
 function latestSavedRecord(reviewsDir: string): { record: ReviewRecord; path: string } | null {
@@ -73,7 +88,7 @@ function latestSavedRecord(reviewsDir: string): { record: ReviewRecord; path: st
 export function findPreviousReview(cwd: string, branch: string, target: string): ReviewRecord | null {
   const reviewsDir = join(cwd, '.codesema', 'reviews')
   if (!existsSync(reviewsDir)) return null
-  const names = readdirSync(reviewsDir).filter((n) => n.endsWith('.json')).sort().reverse()
+  const names = archiveNames(reviewsDir, slug(branch)).reverse()
   for (const name of names) {
     try {
       const record = sanitizeRecord(readJson(join(reviewsDir, name)))

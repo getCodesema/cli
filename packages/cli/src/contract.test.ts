@@ -48,6 +48,11 @@ describe('sanitizeFindings', () => {
     expect(f?.title?.length).toBe(200)
     expect(f?.suggestion?.length).toBe(4000)
   })
+
+  test('file truncated', () => {
+    const [f] = sanitizeFindings([{ file: 'f'.repeat(9000), message: 'm', severity: 'minor' }])
+    expect(f?.file.length).toBe(500)
+  })
 })
 
 describe('sanitizeNarrative', () => {

@@ -49,7 +49,13 @@ function sameBranch(a: string, b: string): boolean {
 }
 
 function targetFromForge(cwd: string): { target: string; source: string } | null {
-  const glabOut = tryExec('glab', ['mr', 'view', '--output', 'json'], cwd)
+  // Each probe blocks up to 8s; when origin clearly names one forge, skip the other.
+  // An unrecognized remote (self-hosted on a custom domain) still probes both.
+  const remote = (tryGit(['remote', 'get-url', 'origin'], cwd) ?? '').toLowerCase()
+  const skipGitlab = remote.includes('github')
+  const skipGithub = remote.includes('gitlab')
+
+  const glabOut = skipGitlab ? null : tryExec('glab', ['mr', 'view', '--output', 'json'], cwd)
   if (glabOut) {
     try {
       const name = (JSON.parse(glabOut) as { target_branch?: string }).target_branch
@@ -61,7 +67,7 @@ function targetFromForge(cwd: string): { target: string; source: string } | null
       // unexpected glab output: fall through to the next fallback
     }
   }
-  const ghOut = tryExec('gh', ['pr', 'view', '--json', 'baseRefName', '--jq', '.baseRefName'], cwd)
+  const ghOut = skipGithub ? null : tryExec('gh', ['pr', 'view', '--json', 'baseRefName', '--jq', '.baseRefName'], cwd)
   if (ghOut) {
     const ref = resolveRef(ghOut, cwd)
     if (ref) return { target: ref, source: 'github (gh pr view)' }
@@ -128,8 +134,7 @@ function excludePathspecs(cwd: string): string[] {
  * quotePath=false: without it, git escapes non-ASCII filenames as octal
  * sequences (e.g. "caf\303\251.txt"), and finding-to-file matching breaks in the UI.
  */
-export function mrDiff(range: string, cwd: string): string {
-  const excludes = excludePathspecs(cwd)
+export function mrDiff(range: string, cwd: string, excludes = excludePathspecs(cwd)): string {
   return git(['-c', 'core.quotePath=false', 'diff', '--no-color', range, '--', '.', ...excludes], cwd)
 }
 
@@ -159,7 +164,7 @@ export function prep(opts: { branch?: string; target?: string; cwd: string; quie
 
   const excludes = excludePathspecs(cwd)
   const range = `${target}...${headRef}`
-  const diff = mrDiff(range, cwd)
+  const diff = mrDiff(range, cwd, excludes)
   if (!diff.trim()) {
     const dirty = headRef === 'HEAD' ? tryGit(['status', '--porcelain'], cwd) : null
     const hint = dirty?.trim()

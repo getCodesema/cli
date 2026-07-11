@@ -82,6 +82,7 @@ export type ReviewRecord = {
 
 const REVIEW_FIRST_MAX = 4
 const REVIEW_FIRST_POINT_MAX = 300
+const FILE_MAX = 500
 const KEY_CHANGES_MAX = 5
 const TAKE_MAX = 500
 const CHECK_MAX = 300
@@ -105,7 +106,7 @@ function sanitizeReviewFirst(raw: unknown, stepsCount: number): ReviewFirstItem[
       Number.isInteger(rawRef) && (rawRef as number) >= 0 && (rawRef as number) < stepsCount
         ? (rawRef as number)
         : null
-    const file = typeof it.file === 'string' && it.file.trim() ? it.file.trim() : null
+    const file = typeof it.file === 'string' && it.file.trim() ? it.file.trim().slice(0, FILE_MAX) : null
     out.push({ point, risk, step_ref: stepRef, file })
   }
   return out
@@ -154,7 +155,9 @@ export function sanitizeNarrative(raw: unknown, findingsCount: number): ReviewNa
     const title = typeof cc.title === 'string' ? cc.title.trim() : ''
     if (!title) continue
     const rationale = typeof cc.rationale === 'string' ? cc.rationale.trim() : ''
-    const files = Array.isArray(cc.files) ? cc.files.filter((f): f is string => typeof f === 'string') : []
+    const files = Array.isArray(cc.files)
+      ? cc.files.filter((f): f is string => typeof f === 'string').map((f) => f.slice(0, FILE_MAX))
+      : []
     const seen = new Set<number>()
     const finding_refs: number[] = []
     for (const n of Array.isArray(cc.finding_refs) ? cc.finding_refs : []) {
@@ -196,7 +199,7 @@ export function sanitizeFindings(raw: unknown): Finding[] {
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue
     const f = item as Record<string, unknown>
-    const file = typeof f.file === 'string' ? f.file.trim() : ''
+    const file = typeof f.file === 'string' ? f.file.trim().slice(0, FILE_MAX) : ''
     const message = typeof f.message === 'string' ? f.message.trim().slice(0, MESSAGE_MAX) : ''
     if (!file || !message) continue
     const severity: FindingSeverity = SEVERITIES.includes(f.severity as FindingSeverity)
