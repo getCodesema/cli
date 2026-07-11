@@ -12,6 +12,9 @@ export default defineConfig({
   target: 'node20',
   clean: true,
   dts: false,
+  // Shipped unminified on purpose: users of a review tool should be able to
+  // audit the exact code that runs on their diff.
+  minify: false,
   define: {
     __CODESEMA_VERSION__: JSON.stringify(version),
   },
