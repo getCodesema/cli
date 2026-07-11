@@ -110,23 +110,7 @@ node packages/cli/dist/index.mjs        # full interactive flow
 node packages/cli/dist/index.mjs show
 ```
 
-Monorepo layout (`codesema-tools`): `packages/cli` (Node CLI: review/prep/show, Hono ephemeral server + SSE), `packages/web` (Vue 3 + Vite SPA embedded in the CLI tarball), `skills/codesema` (the agent skill).
-
-### Publish to npm (maintainers)
-
-The only published package is `packages/cli` (npm name: [`codesema`](https://www.npmjs.com/package/codesema)); the monorepo root is private. Bump the `version` in `packages/cli/package.json` (keep the root `package.json` in sync), then:
-
-```bash
-cd packages/cli
-npm publish
-```
-
-The npm lifecycle hooks do the rest:
-
-- `prepublishOnly` builds the web UI, embeds it in `web-dist/`, then builds the CLI.
-- `prepack` copies the root `LICENSE` and `README.md` into `packages/cli/` (npm never looks above the package folder; these copies are gitignored).
-
-The tarball only ships `dist/` and `web-dist/` (`files` field), plus the copied LICENSE/README.
+Monorepo layout (`codesema-tools`): `packages/cli` (Node CLI: review/prep/show, native `node:http` ephemeral server + SSE, zero runtime dependencies), `packages/web` (Vue 3 + Vite SPA embedded in the CLI tarball), `skills/codesema` (the agent skill).
 
 ## License
 
