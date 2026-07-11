@@ -68,7 +68,7 @@ onUnmounted(closeEvents)
     </template>
     <template v-else>
       <span class="app-spinner" aria-hidden="true" />
-      <p class="nolyra-muted">{{ $t('app.loading') }}</p>
+      <p class="codesema-muted">{{ $t('app.loading') }}</p>
     </template>
   </div>
 </template>
@@ -85,7 +85,7 @@ onUnmounted(closeEvents)
 }
 
 .app-error {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
   margin: 0;
 }
 
@@ -95,23 +95,23 @@ onUnmounted(closeEvents)
   font-family: inherit;
   padding: 7px 14px;
   border-radius: 8px;
-  border: 1px solid var(--nolyra-line);
-  background: var(--nolyra-panel);
-  color: var(--nolyra-ink-2);
+  border: 1px solid var(--codesema-line);
+  background: var(--codesema-panel);
+  color: var(--codesema-ink-2);
   cursor: pointer;
   transition: border-color 0.12s ease;
 }
 
 .app-retry:hover {
-  border-color: var(--nolyra-ink-3);
+  border-color: var(--codesema-ink-3);
 }
 
 .app-spinner {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2.5px solid var(--nolyra-line);
-  border-top-color: var(--nolyra-accent);
+  border: 2.5px solid var(--codesema-line);
+  border-top-color: var(--codesema-accent);
   animation: app-spin 0.8s linear infinite;
 }
 

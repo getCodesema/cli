@@ -69,22 +69,22 @@ function fileFindingCount(file: { topFindings: Finding[]; byLine: Record<number,
 type KindMeta = { label: string; color: string; bg: string }
 
 const NL_KIND: Partial<Record<string, KindMeta>> = {
-  security:   { label: t('diffView.kindSecurity'),   color: 'var(--nolyra-kind-security)',   bg: 'var(--nolyra-kind-security-soft)' },
-  perf:       { label: t('diffView.kindPerf'),        color: 'var(--nolyra-kind-perf)',        bg: 'var(--nolyra-kind-perf-soft)' },
-  convention: { label: t('diffView.kindConvention'),  color: 'var(--nolyra-kind-convention)',  bg: 'var(--nolyra-kind-convention-soft)' },
-  design:     { label: t('diffView.kindDesign'),      color: 'var(--nolyra-kind-design)',      bg: 'var(--nolyra-kind-design-soft)' },
-  praise:     { label: t('diffView.kindPraise'),      color: 'var(--nolyra-kind-praise)',      bg: 'var(--nolyra-kind-praise-soft)' },
-  why:        { label: t('diffView.kindWhy'),         color: 'var(--nolyra-kind-why)',         bg: 'var(--nolyra-kind-why-soft)' },
+  security:   { label: t('diffView.kindSecurity'),   color: 'var(--codesema-kind-security)',   bg: 'var(--codesema-kind-security-soft)' },
+  perf:       { label: t('diffView.kindPerf'),        color: 'var(--codesema-kind-perf)',        bg: 'var(--codesema-kind-perf-soft)' },
+  convention: { label: t('diffView.kindConvention'),  color: 'var(--codesema-kind-convention)',  bg: 'var(--codesema-kind-convention-soft)' },
+  design:     { label: t('diffView.kindDesign'),      color: 'var(--codesema-kind-design)',      bg: 'var(--codesema-kind-design-soft)' },
+  praise:     { label: t('diffView.kindPraise'),      color: 'var(--codesema-kind-praise)',      bg: 'var(--codesema-kind-praise-soft)' },
+  why:        { label: t('diffView.kindWhy'),         color: 'var(--codesema-kind-why)',         bg: 'var(--codesema-kind-why-soft)' },
 }
 
 const SEV_KIND: Record<FindingSeverity, KindMeta> = {
-  critical: { label: t('diffView.sevCritical'), color: 'var(--nolyra-risk-high)',     bg: 'var(--nolyra-risk-high-soft)' },
-  major:    { label: t('diffView.sevMajor'),    color: 'var(--nolyra-risk-high)',     bg: 'var(--nolyra-risk-high-soft)' },
-  minor:    { label: t('diffView.sevMinor'),    color: 'var(--nolyra-risk-med)',      bg: 'var(--nolyra-risk-med-soft)' },
-  info:     { label: t('diffView.sevInfo'),     color: 'var(--nolyra-ink-3)',         bg: 'var(--nolyra-line-2)' },
+  critical: { label: t('diffView.sevCritical'), color: 'var(--codesema-risk-high)',     bg: 'var(--codesema-risk-high-soft)' },
+  major:    { label: t('diffView.sevMajor'),    color: 'var(--codesema-risk-high)',     bg: 'var(--codesema-risk-high-soft)' },
+  minor:    { label: t('diffView.sevMinor'),    color: 'var(--codesema-risk-med)',      bg: 'var(--codesema-risk-med-soft)' },
+  info:     { label: t('diffView.sevInfo'),     color: 'var(--codesema-ink-3)',         bg: 'var(--codesema-line-2)' },
 }
 
-const FALLBACK_KIND: KindMeta = { label: t('diffView.sevInfo'), color: 'var(--nolyra-ink-3)', bg: 'var(--nolyra-line-2)' }
+const FALLBACK_KIND: KindMeta = { label: t('diffView.sevInfo'), color: 'var(--codesema-ink-3)', bg: 'var(--codesema-line-2)' }
 
 function resolveKind(f: Finding): KindMeta {
   if (f.kind) {
@@ -139,7 +139,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 </script>
 
 <template>
-  <p v-if="!files.length" class="nolyra-muted text-sm">{{ $t('reviews.noDiff') }}</p>
+  <p v-if="!files.length" class="codesema-muted text-sm">{{ $t('reviews.noDiff') }}</p>
   <div v-else class="diff-view-root">
     <div v-if="!hideToolbar" class="diff-toolbar">
       <div class="diff-seg">
@@ -384,8 +384,8 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 
 .diff-seg {
   display: inline-flex;
-  background: var(--nolyra-panel);
-  border: 1px solid var(--nolyra-line);
+  background: var(--codesema-panel);
+  border: 1px solid var(--codesema-line);
   border-radius: 9px;
   padding: 2px;
   gap: 2px;
@@ -395,7 +395,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   font-size: 12px;
   padding: 5px 10px;
   border-radius: 7px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   font-weight: 500;
   border: none;
   background: none;
@@ -405,8 +405,8 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 }
 
 .diff-seg button.on {
-  background: var(--nolyra-ink);
-  color: var(--nolyra-bg);
+  background: var(--codesema-ink);
+  color: var(--codesema-bg);
 }
 
 /* file list */
@@ -418,10 +418,10 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 
 /* file */
 .srd-file {
-  border: 1px solid var(--nolyra-line);
+  border: 1px solid var(--codesema-line);
   border-radius: 10px;
   overflow: hidden;
-  background: var(--nolyra-panel);
+  background: var(--codesema-panel);
   /* skip layout/paint for off-screen files on large diffs */
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
@@ -432,19 +432,19 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   align-items: center;
   gap: 9px;
   padding: 10px 14px;
-  background: var(--nolyra-line-2);
-  border-bottom: 1px solid var(--nolyra-line);
+  background: var(--codesema-line-2);
+  border-bottom: 1px solid var(--codesema-line);
   cursor: pointer;
   font-size: 12.5px;
   user-select: none;
 }
 
 .srd-file-head:hover {
-  background: color-mix(in srgb, var(--nolyra-line) 60%, var(--nolyra-panel));
+  background: color-mix(in srgb, var(--codesema-line) 60%, var(--codesema-panel));
 }
 
 .srd-chev {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   font-size: 10px;
   transition: transform 0.15s;
   display: inline-block;
@@ -458,7 +458,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 .srd-path {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -470,7 +470,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 
 .srd-cmt {
   font-size: 11px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   flex-shrink: 0;
 }
 
@@ -484,15 +484,15 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 }
 
 .srd-delta-add {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .srd-delta-del {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .srd-delta-sep {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 /* file body */
@@ -505,11 +505,11 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 
 /* gap bar */
 .srd-gap {
-  background: var(--nolyra-line-2);
-  color: var(--nolyra-ink-3);
+  background: var(--codesema-line-2);
+  color: var(--codesema-ink-3);
   padding: 5px 16px;
   font-size: 11px;
-  border-bottom: 1px solid var(--nolyra-line);
+  border-bottom: 1px solid var(--codesema-line);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -532,35 +532,35 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 }
 
 .srd-uline-ctx {
-  background: var(--nolyra-panel);
+  background: var(--codesema-panel);
 }
 
 .srd-uline-add {
-  background: var(--nolyra-diff-add);
+  background: var(--codesema-diff-add);
 }
 
 .srd-uline-add .srd-no {
-  background: var(--nolyra-diff-add-gut);
+  background: var(--codesema-diff-add-gut);
 }
 
 .srd-uline-del {
-  background: var(--nolyra-diff-del);
+  background: var(--codesema-diff-del);
 }
 
 .srd-uline-del .srd-no {
-  background: var(--nolyra-diff-del-gut);
+  background: var(--codesema-diff-del-gut);
 }
 
 .srd-uline-add .srd-sign {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .srd-uline-del .srd-sign {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .srd-uline-del .srd-code {
-  color: color-mix(in srgb, var(--nolyra-risk-high) 70%, var(--nolyra-ink-2));
+  color: color-mix(in srgb, var(--codesema-risk-high) 70%, var(--codesema-ink-2));
 }
 
 /* split view */
@@ -582,7 +582,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   min-width: 0;
   display: flex;
   align-items: flex-start;
-  border-right: 1px solid var(--nolyra-line);
+  border-right: 1px solid var(--codesema-line);
 }
 
 .srd-cell:last-child {
@@ -590,44 +590,44 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 }
 
 .srd-cell-ctx {
-  background: var(--nolyra-panel);
+  background: var(--codesema-panel);
 }
 
 .srd-cell-add {
-  background: var(--nolyra-diff-add);
+  background: var(--codesema-diff-add);
 }
 
 .srd-cell-add .srd-no {
-  background: var(--nolyra-diff-add-gut);
+  background: var(--codesema-diff-add-gut);
 }
 
 .srd-cell-add .srd-sign {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .srd-cell-del {
-  background: var(--nolyra-diff-del);
+  background: var(--codesema-diff-del);
 }
 
 .srd-cell-del .srd-no {
-  background: var(--nolyra-diff-del-gut);
+  background: var(--codesema-diff-del-gut);
 }
 
 .srd-cell-del .srd-sign {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .srd-cell-del .srd-code {
-  color: color-mix(in srgb, var(--nolyra-risk-high) 70%, var(--nolyra-ink-2));
+  color: color-mix(in srgb, var(--codesema-risk-high) 70%, var(--codesema-ink-2));
 }
 
 .srd-cell-nil {
   background: repeating-linear-gradient(
     45deg,
-    var(--nolyra-line-2),
-    var(--nolyra-line-2) 6px,
-    var(--nolyra-bg) 6px,
-    var(--nolyra-bg) 12px
+    var(--codesema-line-2),
+    var(--codesema-line-2) 6px,
+    var(--codesema-bg) 6px,
+    var(--codesema-bg) 12px
   );
 }
 
@@ -637,7 +637,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   flex-shrink: 0;
   text-align: right;
   padding: 0 8px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   user-select: none;
   font-size: 11px;
   line-height: inherit;
@@ -661,14 +661,14 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   white-space: pre-wrap;
   word-break: break-word;
   padding-right: 10px;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   line-height: inherit;
 }
 
 /* note card */
 .nlr-note {
-  background: var(--nolyra-panel);
-  border: 1px solid var(--nolyra-line);
+  background: var(--codesema-panel);
+  border: 1px solid var(--codesema-line);
   border-left-width: 3px;
   border-radius: 0 9px 9px 0;
   margin: 8px 12px 10px;
@@ -703,7 +703,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: var(--nolyra-accent);
+  background: var(--codesema-accent);
   color: #fff;
   font-family: var(--font-display);
   font-size: 12px;
@@ -718,7 +718,7 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 .nlr-name {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
 }
 
 .nlr-kind {
@@ -734,13 +734,13 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   font-size: 13px;
   font-weight: 600;
   margin: 0 0 3px 0;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
 }
 
 .nlr-note-body {
   font-size: 12.5px;
   line-height: 1.55;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   margin: 0;
 }
 
@@ -748,22 +748,22 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 .nlr-note-title code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   padding: 1px 5px;
   border-radius: 4px;
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
 }
 
 .nlr-note-sep {
   height: 1px;
-  background: var(--nolyra-line);
+  background: var(--codesema-line);
   margin: 10px 0;
 }
 
 /* suggested fix */
 .nlr-sugg {
   margin-top: 11px;
-  border: 1px solid var(--nolyra-line);
+  border: 1px solid var(--codesema-line);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -772,8 +772,8 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--nolyra-risk-low-soft);
-  color: var(--nolyra-risk-low);
+  background: var(--codesema-risk-low-soft);
+  color: var(--codesema-risk-low);
   padding: 6px 11px;
   font-size: 11px;
   font-weight: 700;
@@ -783,11 +783,11 @@ function extraNotes(byLine: Record<number, Finding[]>, lineNo: number | null): F
 .nlr-sugg-code {
   margin: 0;
   padding: 10px 12px;
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.6;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   white-space: pre-wrap;
   word-break: break-word;
 }

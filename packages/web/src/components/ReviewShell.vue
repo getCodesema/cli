@@ -6,8 +6,9 @@ import { buildFixPrompt, isActionable } from '../composables/useFixPrompt'
 import { useReviewProgress } from '../composables/useReviewProgress'
 import type { ReviewRecord } from '../types'
 import ReviewPrologue from './ReviewPrologue.vue'
-import ChapterList from './ChapterList.vue'
-import ChapterReview from './ChapterReview.vue'
+import StepList from './StepList.vue'
+import StepRail from './StepRail.vue'
+import StepReview from './StepReview.vue'
 import DiffView from './DiffView.vue'
 import FileTree from './FileTree.vue'
 
@@ -21,10 +22,10 @@ const meta = computed(() => props.record.meta)
 const findings = computed<Finding[]>(() => props.record.review.findings)
 const narrative = computed(() => props.record.review.narrative)
 // check: null (contract) normalized to undefined (expected by the child components)
-const chapters = computed(() =>
-  (narrative.value?.chapters ?? []).map((ch) => ({ ...ch, check: ch.check ?? undefined })),
+const steps = computed(() =>
+  (narrative.value?.steps ?? []).map((ch) => ({ ...ch, check: ch.check ?? undefined })),
 )
-const hasChapters = computed(() => chapters.value.length > 0)
+const hasSteps = computed(() => steps.value.length > 0)
 const reviewFirst = computed(() => narrative.value?.review_first ?? [])
 
 const parsedDiff = computed(() => parseDiff(props.record.diff, findings.value))
@@ -72,12 +73,12 @@ onUnmounted(() => clearTimeout(copiedTimer))
 const progressKey = `${props.record.meta.branch}:${props.record.meta.created_at}`
 const { readSet, checkedSet, toggleRead, toggleChecked } = useReviewProgress(progressKey)
 
-const activeTab = ref<'chapters' | 'files'>('chapters')
+const activeTab = ref<'steps' | 'files'>('steps')
 
 const guidedIndex = ref<number | null>(null)
 const isGuidedMode = computed(() => guidedIndex.value !== null)
 
-function onChapterSelect(index: number) {
+function onStepSelect(index: number) {
   guidedIndex.value = index
   syncHash()
 }
@@ -92,19 +93,19 @@ function onGuidedNavigate(index: number) {
 
 function syncHash() {
   if (!isClient) return
-  const hash = activeTab.value === 'files' ? '#files' : guidedIndex.value !== null ? `#chapter-${guidedIndex.value}` : ''
+  const hash = activeTab.value === 'files' ? '#files' : guidedIndex.value !== null ? `#step-${guidedIndex.value}` : ''
   history.replaceState(null, '', hash || location.pathname)
 }
 
 if (isClient) {
-  const m = /^#chapter-(\d+)$/.exec(location.hash)
+  const m = /^#step-(\d+)$/.exec(location.hash)
   if (location.hash === '#files') activeTab.value = 'files'
-  else if (m && Number(m[1]) < chapters.value.length) guidedIndex.value = Number(m[1])
+  else if (m && Number(m[1]) < steps.value.length) guidedIndex.value = Number(m[1])
 }
 
 const otherFiles = computed(() => {
-  if (!hasChapters.value) return []
-  const covered = chapters.value.flatMap((ch) => ch.files)
+  if (!hasSteps.value) return []
+  const covered = steps.value.flatMap((ch) => ch.files)
   return parsedDiff.value.files.filter((f) => !covered.some((c) => sameFile(c, f.path)))
 })
 
@@ -166,19 +167,26 @@ const SEV_CLS: Record<string, string> = {
       >
         {{ copied ? $t('header.copied') : $t('header.copyPrompt', { n: actionableCount }) }}
       </button>
-      <span class="sr-verdict" :class="verdictMeta!.cls">{{ $t(verdictMeta!.labelKey) }}</span>
+      <span class="sr-verdict-group">
+        <span class="sr-semaphore" :class="`sr-semaphore--${record.review.verdict}`" aria-hidden="true">
+          <span class="sr-sem-dot sr-sem-dot--stop" />
+          <span class="sr-sem-dot sr-sem-dot--check" />
+          <span class="sr-sem-dot sr-sem-dot--go" />
+        </span>
+        <span class="sr-verdict" :class="verdictMeta!.cls">{{ $t(verdictMeta!.labelKey) }}</span>
+      </span>
     </header>
 
     <div class="sr-tabs" role="tablist">
       <button
         role="tab"
         class="sr-tab"
-        :class="{ on: activeTab === 'chapters' }"
-        :aria-selected="activeTab === 'chapters'"
-        @click="activeTab = 'chapters'; syncHash()"
+        :class="{ on: activeTab === 'steps' }"
+        :aria-selected="activeTab === 'steps'"
+        @click="activeTab = 'steps'; syncHash()"
       >
-        {{ $t('app.tabChapters') }}
-        <span v-if="chapters.length > 0" class="sr-tab-n">{{ chapters.length }}</span>
+        {{ $t('app.tabSteps') }}
+        <span v-if="steps.length > 0" class="sr-tab-n">{{ steps.length }}</span>
       </button>
       <button
         role="tab"
@@ -197,11 +205,19 @@ const SEV_CLS: Record<string, string> = {
       </span>
     </div>
 
-    <div v-show="activeTab === 'chapters'" class="sr-stage">
+    <div v-show="activeTab === 'steps'" class="sr-stage">
 
-      <ChapterReview
-        v-if="isGuidedMode && hasChapters && record.diff"
-        :chapters="chapters"
+      <StepRail
+        v-if="hasSteps"
+        :steps="steps"
+        :read-set="readSet"
+        :current-index="guidedIndex"
+        @select="onStepSelect"
+      />
+
+      <StepReview
+        v-if="isGuidedMode && hasSteps && record.diff"
+        :steps="steps"
         :findings="findings"
         :diff="record.diff"
         :selected-index="guidedIndex!"
@@ -238,21 +254,21 @@ const SEV_CLS: Record<string, string> = {
           </div>
 
           <div class="sr-col-right">
-            <ChapterList
-              :chapters="chapters"
+            <StepList
+              :steps="steps"
               :parsed-diff="parsedDiff"
               :read-set="readSet"
-              @select="onChapterSelect"
+              @select="onStepSelect"
             />
           </div>
         </div>
 
-        <div v-if="!hasChapters && record.diff" class="sr-flat-diff">
+        <div v-if="!hasSteps && record.diff" class="sr-flat-diff">
           <div class="sr-general-tag">{{ $t('reviews.annotatedDiff') }}</div>
           <DiffView :files="parsedDiff.files" />
         </div>
 
-        <div v-if="hasChapters && otherFiles.length" class="sr-flat-diff">
+        <div v-if="hasSteps && otherFiles.length" class="sr-flat-diff">
           <div class="sr-general-tag">{{ $t('reviews.otherChanges') }}</div>
           <DiffView :files="otherFiles" />
         </div>
@@ -305,7 +321,7 @@ const SEV_CLS: Record<string, string> = {
           </div>
         </div>
       </div>
-      <p v-else class="nolyra-muted sr-empty-msg">{{ $t('reviews.noDiff') }}</p>
+      <p v-else class="codesema-muted sr-empty-msg">{{ $t('reviews.noDiff') }}</p>
     </div>
 
   </div>
@@ -350,43 +366,95 @@ const SEV_CLS: Record<string, string> = {
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .sr-branches code {
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   border-radius: 6px;
   padding: 2px 8px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
 }
 
 .sr-branch-arrow {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
+}
+
+.sr-verdict-group {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Miniature semaphore: exactly one light on, the off lights stay visible but dimmed. */
+.sr-semaphore {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--codesema-ink);
+  border-radius: 7px;
+  padding: 4px;
+}
+
+.sr-sem-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.sr-sem-dot--stop {
+  background: var(--codesema-signal-stop);
+  opacity: 0.28;
+}
+
+.sr-sem-dot--check {
+  background: var(--codesema-signal-check);
+  opacity: 0.32;
+}
+
+.sr-sem-dot--go {
+  background: var(--codesema-signal-go);
+  opacity: 0.3;
+}
+
+.sr-semaphore--request_changes .sr-sem-dot--stop {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--codesema-signal-stop);
+}
+
+.sr-semaphore--comment .sr-sem-dot--check {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--codesema-signal-check);
+}
+
+.sr-semaphore--approve .sr-sem-dot--go {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--codesema-signal-go);
 }
 
 .sr-verdict {
-  flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
   border-radius: 999px;
   padding: 5px 13px;
   border: 1px solid transparent;
-  margin-top: 4px;
 }
 
 .sr-verdict--approve {
-  color: var(--nolyra-risk-low);
-  background: var(--nolyra-risk-low-soft);
+  color: var(--codesema-risk-low);
+  background: var(--codesema-risk-low-soft);
 }
 
 .sr-verdict--changes {
-  color: var(--nolyra-risk-high);
-  background: var(--nolyra-risk-high-soft);
+  color: var(--codesema-risk-high);
+  background: var(--codesema-risk-high-soft);
 }
 
 .sr-verdict--comment {
-  color: var(--nolyra-amber);
-  background: var(--nolyra-amber-soft);
+  color: var(--codesema-amber);
+  background: var(--codesema-amber-soft);
 }
 
 .sr-copy-btn {
@@ -395,9 +463,9 @@ const SEV_CLS: Record<string, string> = {
   font-size: 12px;
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid var(--nolyra-line);
-  background: var(--nolyra-panel);
-  color: var(--nolyra-ink-2);
+  border: 1px solid var(--codesema-line);
+  background: var(--codesema-panel);
+  color: var(--codesema-ink-2);
   font-family: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -405,12 +473,12 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-copy-btn:hover {
-  border-color: var(--nolyra-ink-3);
+  border-color: var(--codesema-ink-3);
 }
 
 .sr-copy-btn--done {
-  color: var(--nolyra-risk-low);
-  border-color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
+  border-color: var(--codesema-risk-low);
 }
 
 /* ── Onglets ────────────────────────────────────────────────── */
@@ -419,7 +487,7 @@ const SEV_CLS: Record<string, string> = {
   align-items: center;
   gap: 4px;
   padding: 0 26px;
-  border-bottom: 1px solid var(--nolyra-line);
+  border-bottom: 1px solid var(--codesema-line);
 }
 
 .sr-tab {
@@ -434,27 +502,27 @@ const SEV_CLS: Record<string, string> = {
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   cursor: pointer;
   transition: color 0.12s ease;
 }
 
 .sr-tab:hover {
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
 }
 
 .sr-tab.on {
-  color: var(--nolyra-ink);
-  border-bottom-color: var(--nolyra-accent);
+  color: var(--codesema-ink);
+  border-bottom-color: var(--codesema-accent);
 }
 
 .sr-tab-n {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   border-radius: 999px;
   padding: 1px 7px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .sr-tabs-spacer {
@@ -469,11 +537,11 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-add {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .sr-del {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 /* ── Stage ──────────────────────────────────────────────────── */
@@ -494,7 +562,7 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-col-right {
-  border-left: 1px solid var(--nolyra-line);
+  border-left: 1px solid var(--codesema-line);
   min-height: 100%;
 }
 
@@ -504,7 +572,7 @@ const SEV_CLS: Record<string, string> = {
   }
   .sr-col-right {
     border-left: none;
-    border-top: 1px solid var(--nolyra-line);
+    border-top: 1px solid var(--codesema-line);
   }
 }
 
@@ -518,7 +586,7 @@ const SEV_CLS: Record<string, string> = {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
   margin-bottom: 10px;
 }
 
@@ -532,11 +600,11 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-general-item {
-  border-left: 2px solid var(--nolyra-line);
+  border-left: 2px solid var(--codesema-line);
   padding-left: 12px;
   font-size: 13px;
   line-height: 1.55;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
 }
 
 .sr-sev {
@@ -547,30 +615,30 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-sev--high {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .sr-sev--med {
-  color: var(--nolyra-risk-med);
+  color: var(--codesema-risk-med);
 }
 
 .sr-sev--info {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .sr-general-file {
   font-family: var(--font-mono);
   font-size: 11px;
   margin-right: 6px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .sr-general-sugg {
   margin: 8px 0 0;
   padding: 8px 10px;
   border-radius: 7px;
-  background: var(--nolyra-risk-low-soft);
-  color: var(--nolyra-risk-low);
+  background: var(--codesema-risk-low-soft);
+  color: var(--codesema-risk-low);
   font-family: var(--font-mono);
   font-size: 11.5px;
   white-space: pre-wrap;
@@ -605,16 +673,16 @@ const SEV_CLS: Record<string, string> = {
   align-items: center;
   gap: 10px;
   padding: 12px 18px;
-  border-bottom: 1px solid var(--nolyra-line);
+  border-bottom: 1px solid var(--codesema-line);
 }
 
 .sr-files-tbtn {
   font-size: 12px;
   padding: 6px 11px;
   border-radius: 8px;
-  border: 1px solid var(--nolyra-line);
-  background: var(--nolyra-panel);
-  color: var(--nolyra-ink-2);
+  border: 1px solid var(--codesema-line);
+  background: var(--codesema-panel);
+  color: var(--codesema-ink-2);
   font-family: inherit;
   font-weight: 500;
   cursor: pointer;
@@ -622,13 +690,13 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-files-tbtn:hover {
-  border-color: var(--nolyra-ink-3);
+  border-color: var(--codesema-ink-3);
 }
 
 .sr-files-seg {
   display: inline-flex;
-  background: var(--nolyra-panel);
-  border: 1px solid var(--nolyra-line);
+  background: var(--codesema-panel);
+  border: 1px solid var(--codesema-line);
   border-radius: 9px;
   padding: 2px;
   gap: 2px;
@@ -638,7 +706,7 @@ const SEV_CLS: Record<string, string> = {
   font-size: 12px;
   padding: 5px 10px;
   border-radius: 7px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   font-weight: 500;
   border: none;
   background: none;
@@ -648,8 +716,8 @@ const SEV_CLS: Record<string, string> = {
 }
 
 .sr-files-seg button.on {
-  background: var(--nolyra-ink);
-  color: var(--nolyra-bg);
+  background: var(--codesema-ink);
+  color: var(--codesema-bg);
 }
 
 .sr-files-difflist {

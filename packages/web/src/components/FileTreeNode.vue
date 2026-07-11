@@ -108,7 +108,7 @@ const paddingLeft = computed(() => {
   padding-right: 10px;
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   font-weight: 600;
   text-align: left;
   text-transform: uppercase;
@@ -118,8 +118,8 @@ const paddingLeft = computed(() => {
 }
 
 .ftn-dir:hover {
-  background: var(--nolyra-line-2);
-  color: var(--nolyra-ink-2);
+  background: var(--codesema-line-2);
+  color: var(--codesema-ink-2);
 }
 
 .ftn-dir-ic {
@@ -127,7 +127,7 @@ const paddingLeft = computed(() => {
   transition: transform 0.15s;
   display: inline-block;
   flex-shrink: 0;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .ftn-dir-ic.open {
@@ -155,19 +155,19 @@ const paddingLeft = computed(() => {
   padding-right: 10px;
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   text-align: left;
   transition: background 0.1s;
   min-width: 0;
 }
 
 .ftn-file:hover {
-  background: var(--nolyra-line-2);
-  color: var(--nolyra-ink);
+  background: var(--codesema-line-2);
+  color: var(--codesema-ink);
 }
 
 .ftn-file-ic {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   font-size: 10px;
   flex-shrink: 0;
 }
@@ -189,18 +189,18 @@ const paddingLeft = computed(() => {
 }
 
 .ftn-delta-add {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .ftn-delta-del {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .ftn-cmt {
   font-size: 10px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   flex-shrink: 0;
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   border-radius: 999px;
   padding: 0 5px;
 }

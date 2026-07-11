@@ -1,46 +1,52 @@
-/* Thème sombre "Nuit" — tokens portés du design Nolyra (préfixe conservé pour
-   garder les composants identiques à la source ; renommage trivial au rebranding). */
+/* "Semaphore" light theme: single light mode, token values from DESIGN.md.
+   The green/amber/red trio is semantic (pass/check/block), never decorative. */
 :root {
-  --nolyra-bg: #08090f;
-  --nolyra-panel: #141926;
-  --nolyra-ink: #e8ecf4;
-  --nolyra-ink-2: #c7cedd;
-  --nolyra-ink-3: #9aa3b8;
-  --nolyra-line: #222a3d;
-  --nolyra-line-2: #1a2130;
-  --nolyra-accent: #ff7a2e;
-  --nolyra-accent-soft: #1d1520;
-  --nolyra-amber: #ffc24d;
-  --nolyra-amber-soft: #1c1a12;
+  --codesema-bg: #faf1ea;
+  --codesema-panel: #fffdfb;
+  --codesema-ink: #1e3a5f;
+  --codesema-ink-2: #3a4a54;
+  --codesema-ink-3: #52646e;
+  --codesema-line: #e6d4ce;
+  --codesema-line-2: #e9dad8;
+  --codesema-accent: #1e3a5f;
+  --codesema-accent-soft: #e7f0f8;
+  --codesema-amber: #f79009;
+  --codesema-amber-soft: #fbede0;
 
-  --nolyra-risk-high: #e8452b;
-  --nolyra-risk-high-soft: #1d1520;
-  --nolyra-risk-med: #ffc24d;
-  --nolyra-risk-med-soft: #1c1a12;
-  --nolyra-risk-low: #4cc7a3;
-  --nolyra-risk-low-soft: #12241d;
+  --codesema-risk-high: #e5342a;
+  --codesema-risk-high-soft: #fae7e5;
+  --codesema-risk-med: #f79009;
+  --codesema-risk-med-soft: #fbede0;
+  --codesema-risk-low: #0a9d57;
+  --codesema-risk-low-soft: #e7f5ec;
 
-  --nolyra-kind-security: #f07a63;
-  --nolyra-kind-security-soft: #1d1520;
-  --nolyra-kind-perf: #ffc24d;
-  --nolyra-kind-perf-soft: #1c1a12;
-  --nolyra-kind-convention: #7fa8f0;
-  --nolyra-kind-convention-soft: #18202e;
-  --nolyra-kind-design: #b89ae8;
-  --nolyra-kind-design-soft: rgba(138, 111, 214, 0.2);
-  --nolyra-kind-praise: #4cc7a3;
-  --nolyra-kind-praise-soft: #12241d;
-  --nolyra-kind-why: #ff9d4d;
-  --nolyra-kind-why-soft: #2a1a12;
+  --codesema-kind-security: #e5342a;
+  --codesema-kind-security-soft: #fae7e5;
+  --codesema-kind-perf: #f79009;
+  --codesema-kind-perf-soft: #fbede0;
+  --codesema-kind-convention: #3e6e92;
+  --codesema-kind-convention-soft: #e7f0f8;
+  --codesema-kind-design: #8b7bc9;
+  --codesema-kind-design-soft: #ece8f8;
+  --codesema-kind-praise: #0a9d57;
+  --codesema-kind-praise-soft: #e7f5ec;
+  --codesema-kind-why: #a05c2e;
+  --codesema-kind-why-soft: #fbede0;
 
-  --nolyra-diff-add: #12241d;
-  --nolyra-diff-add-gut: #163a2a;
-  --nolyra-diff-del: #2a1214;
-  --nolyra-diff-del-gut: #3a1a1a;
+  --codesema-signal-go: #12b76a;
+  --codesema-signal-check: #f79009;
+  --codesema-signal-stop: #e5342a;
+  --codesema-dot-idle: #d6c6c9;
+  --codesema-line-idle: #dccac4;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --codesema-diff-add: #edf5f1;
+  --codesema-diff-add-gut: #cadfd4;
+  --codesema-diff-del: #fae7e5;
+  --codesema-diff-del-gut: #e7d2cf;
+
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 * {
@@ -51,29 +57,29 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--nolyra-bg);
-  color: var(--nolyra-ink);
+  background: var(--codesema-bg);
+  color: var(--codesema-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.nolyra-muted {
-  color: var(--nolyra-ink-3);
+.codesema-muted {
+  color: var(--codesema-ink-3);
 }
 
-/* Scrollbars fines sombres */
+/* Thin warm scrollbars (DESIGN.md section 4) */
 *::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--nolyra-line);
-  border-radius: 99px;
+  background: #dccac4;
+  border-radius: 10px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--nolyra-ink-3);
+  background: #c9b8be;
 }

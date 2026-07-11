@@ -7,7 +7,7 @@ type KeyChange = { title: string; detail: string }
 type ReviewFirstItem = {
   point: string
   risk: 'high' | 'medium' | 'low'
-  chapter_ref: number | null
+  step_ref: number | null
   file: string | null
 }
 
@@ -26,9 +26,9 @@ const props = defineProps<{
 }>()
 
 const RISK_DOT: Record<string, string> = {
-  high: 'var(--nolyra-risk-high)',
-  medium: 'var(--nolyra-risk-med)',
-  low: 'var(--nolyra-risk-low)',
+  high: 'var(--codesema-risk-high)',
+  medium: 'var(--codesema-risk-med)',
+  low: 'var(--codesema-risk-low)',
 }
 
 function riskDotColor(risk: string): string {
@@ -131,7 +131,7 @@ function renderInline(text: string): string {
         <p class="prologue-block-body prologue-block-body--preformatted">{{ summary }}</p>
       </section>
 
-      <p v-if="!intent && !summary" class="prologue-empty nolyra-muted">
+      <p v-if="!intent && !summary" class="prologue-empty codesema-muted">
         {{ $t('reviews.prologue.empty') }}
       </p>
 
@@ -159,14 +159,14 @@ function renderInline(text: string): string {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
   margin-bottom: 0;
 }
 
 .prologue-block-body {
   font-size: 14.5px;
   line-height: 1.62;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   margin: 0;
   text-wrap: pretty;
 }
@@ -178,10 +178,10 @@ function renderInline(text: string): string {
 :deep(.prologue-inline-code) {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--nolyra-line-2);
+  background: var(--codesema-line-2);
   padding: 1px 5px;
   border-radius: 4px;
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
 }
 
 .prologue-keys {
@@ -209,7 +209,7 @@ function renderInline(text: string): string {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--nolyra-accent);
+  background: var(--codesema-accent);
 }
 
 .prologue-key-title {
@@ -217,14 +217,14 @@ function renderInline(text: string): string {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   line-height: 1.4;
 }
 
 .prologue-key-detail {
   display: block;
   font-size: 13px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   line-height: 1.5;
   margin-top: 2px;
 }
@@ -258,7 +258,7 @@ function renderInline(text: string): string {
   display: block;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   line-height: 1.5;
 }
 
@@ -268,15 +268,15 @@ function renderInline(text: string): string {
 }
 
 .prologue-confidence--high {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .prologue-confidence--med {
-  color: var(--nolyra-risk-med);
+  color: var(--codesema-risk-med);
 }
 
 .prologue-confidence--low {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .prologue-empty {

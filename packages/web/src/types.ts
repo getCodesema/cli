@@ -2,7 +2,7 @@
 
 import type { Finding } from './composables/useDiff'
 
-export type NarrativeChapter = {
+export type NarrativeStep = {
   title: string
   rationale: string
   files: string[]
@@ -12,13 +12,13 @@ export type NarrativeChapter = {
   check?: string | null
 }
 
-/** Chapter normalized for display (check: null becomes undefined; see ReviewShell). */
-export type ChapterView = Omit<NarrativeChapter, 'check'> & { check?: string }
+/** Step normalized for display (check: null becomes undefined; see ReviewShell). */
+export type StepView = Omit<NarrativeStep, 'check'> & { check?: string }
 
 export type ReviewFirstItem = {
   point: string
   risk: 'high' | 'medium' | 'low'
-  chapter_ref: number | null
+  step_ref: number | null
   file: string | null
 }
 
@@ -30,7 +30,7 @@ export type ReviewNarrative = {
     what: string
     key_changes: { title: string; detail: string }[]
   }
-  chapters: NarrativeChapter[]
+  steps: NarrativeStep[]
   review_first: ReviewFirstItem[]
 }
 
@@ -90,5 +90,5 @@ export type PartialReview = {
   summary?: string
   intent?: string
   findings: PartialFinding[]
-  chapterTitles: string[]
+  stepTitles: string[]
 }

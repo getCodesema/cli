@@ -23,7 +23,7 @@ const elapsed = computed(() => {
 const WAIT_PHASES = [
   'reading the diff…',
   'following the call chains…',
-  'grouping changes into chapters…',
+  'grouping changes into steps…',
   'weighing the risks…',
   'writing the story…',
   'collecting praise…',
@@ -39,7 +39,7 @@ const input = computed(() => props.status.input)
 const hasPartialContent = computed(
   () =>
     !!props.partial &&
-    (props.partial.findings.length > 0 || !!props.partial.summary || !!props.partial.verdict || props.partial.chapterTitles.length > 0),
+    (props.partial.findings.length > 0 || !!props.partial.summary || !!props.partial.verdict || props.partial.stepTitles.length > 0),
 )
 
 const FILE_PREVIEW_MAX = 12
@@ -53,14 +53,14 @@ const VERDICT_META: Record<string, { labelKey: string; cls: string }> = {
 }
 
 const SEVERITY_DOT: Record<string, string> = {
-  critical: 'var(--nolyra-risk-high)',
-  major: 'var(--nolyra-accent)',
-  minor: 'var(--nolyra-risk-med)',
-  info: 'var(--nolyra-risk-low)',
+  critical: 'var(--codesema-risk-high)',
+  major: 'var(--codesema-accent)',
+  minor: 'var(--codesema-risk-med)',
+  info: 'var(--codesema-risk-low)',
 }
 
 function severityDot(severity?: string): string {
-  return SEVERITY_DOT[severity ?? ''] ?? 'var(--nolyra-ink-3)'
+  return SEVERITY_DOT[severity ?? ''] ?? 'var(--codesema-ink-3)'
 }
 </script>
 
@@ -122,11 +122,11 @@ function severityDot(severity?: string): string {
         </TransitionGroup>
       </section>
 
-      <section v-if="partial.chapterTitles.length" class="live-panel">
-        <div class="live-panel-tag">{{ $t('live.chapters') }}</div>
-        <div class="live-chapters">
-          <span v-for="(title, i) in partial.chapterTitles" :key="i" class="live-chapter-pill">
-            <span class="live-chapter-index">{{ i + 1 }}</span>{{ title }}
+      <section v-if="partial.stepTitles.length" class="live-panel">
+        <div class="live-panel-tag">{{ $t('live.steps') }}</div>
+        <div class="live-steps">
+          <span v-for="(title, i) in partial.stepTitles" :key="i" class="live-step-pill">
+            <span class="live-step-index">{{ i + 1 }}</span>{{ title }}
           </span>
         </div>
       </section>
@@ -177,17 +177,17 @@ function severityDot(severity?: string): string {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--nolyra-accent);
+  background: var(--codesema-amber);
   animation: live-pulse 1.4s ease-in-out infinite;
 }
 
 @keyframes live-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 122, 46, 0.55);
+    box-shadow: 0 0 0 0 rgba(247, 144, 9, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(255, 122, 46, 0);
+    box-shadow: 0 0 0 7px rgba(247, 144, 9, 0);
   }
 }
 
@@ -202,14 +202,14 @@ function severityDot(severity?: string): string {
   margin-left: auto;
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 .live-branch {
   margin: 0;
   font-size: 14px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -221,20 +221,20 @@ function severityDot(severity?: string): string {
 }
 
 .live-branch-arrow {
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .live-agent {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .live-error {
-  border: 1px solid var(--nolyra-risk-high);
-  background: var(--nolyra-risk-high-soft);
-  color: var(--nolyra-ink);
+  border: 1px solid var(--codesema-risk-high);
+  background: var(--codesema-risk-high-soft);
+  color: var(--codesema-ink);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13.5px;
@@ -250,30 +250,30 @@ function severityDot(severity?: string): string {
 
 .live-chip {
   font-size: 12.5px;
-  color: var(--nolyra-ink-2);
-  border: 1px solid var(--nolyra-line);
-  background: var(--nolyra-panel);
+  color: var(--codesema-ink-2);
+  border: 1px solid var(--codesema-line);
+  background: var(--codesema-panel);
   border-radius: 999px;
   padding: 4px 12px;
 }
 
 .live-chip--accent {
-  color: var(--nolyra-accent);
-  border-color: var(--nolyra-accent);
-  background: var(--nolyra-accent-soft);
+  color: var(--codesema-accent);
+  border-color: var(--codesema-accent);
+  background: var(--codesema-accent-soft);
 }
 
 .live-add {
-  color: var(--nolyra-risk-low);
+  color: var(--codesema-risk-low);
 }
 
 .live-del {
-  color: var(--nolyra-risk-high);
+  color: var(--codesema-risk-high);
 }
 
 .live-panel {
-  border: 1px solid var(--nolyra-line);
-  background: var(--nolyra-panel);
+  border: 1px solid var(--codesema-line);
+  background: var(--codesema-panel);
   border-radius: 12px;
   padding: 14px 16px;
 }
@@ -283,7 +283,7 @@ function severityDot(severity?: string): string {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -292,41 +292,41 @@ function severityDot(severity?: string): string {
 
 .live-count {
   font-family: var(--font-mono);
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
 }
 
 .live-verdict {
   font-size: 11px;
   border-radius: 999px;
   padding: 2px 10px;
-  border: 1px solid var(--nolyra-line);
+  border: 1px solid var(--codesema-line);
   text-transform: none;
   letter-spacing: normal;
 }
 
 .live-verdict--approve {
-  color: var(--nolyra-risk-low);
-  border-color: var(--nolyra-risk-low);
-  background: var(--nolyra-risk-low-soft);
+  color: var(--codesema-risk-low);
+  border-color: var(--codesema-risk-low);
+  background: var(--codesema-risk-low-soft);
 }
 
 .live-verdict--changes {
-  color: var(--nolyra-risk-high);
-  border-color: var(--nolyra-risk-high);
-  background: var(--nolyra-risk-high-soft);
+  color: var(--codesema-risk-high);
+  border-color: var(--codesema-risk-high);
+  background: var(--codesema-risk-high-soft);
 }
 
 .live-verdict--comment {
-  color: var(--nolyra-risk-med);
-  border-color: var(--nolyra-risk-med);
-  background: var(--nolyra-risk-med-soft);
+  color: var(--codesema-risk-med);
+  border-color: var(--codesema-risk-med);
+  background: var(--codesema-risk-med-soft);
 }
 
 .live-summary {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   white-space: pre-wrap;
 }
 
@@ -336,7 +336,7 @@ function severityDot(severity?: string): string {
   height: 15px;
   margin-left: 3px;
   vertical-align: text-bottom;
-  background: var(--nolyra-accent);
+  background: var(--codesema-accent);
   animation: live-caret 0.9s steps(2) infinite;
 }
 
@@ -375,14 +375,14 @@ function severityDot(severity?: string): string {
 
 .live-finding-title {
   font-size: 13.5px;
-  color: var(--nolyra-ink);
+  color: var(--codesema-ink);
   line-height: 1.45;
 }
 
 .live-finding-file {
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
   overflow-wrap: anywhere;
 }
 
@@ -395,16 +395,16 @@ function severityDot(severity?: string): string {
   transform: translateY(4px);
 }
 
-.live-chapters {
+.live-steps {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.live-chapter-pill {
+.live-step-pill {
   font-size: 12.5px;
-  color: var(--nolyra-ink-2);
-  border: 1px solid var(--nolyra-line);
+  color: var(--codesema-ink-2);
+  border: 1px solid var(--codesema-line);
   border-radius: 999px;
   padding: 4px 12px;
   display: inline-flex;
@@ -412,10 +412,10 @@ function severityDot(severity?: string): string {
   gap: 7px;
 }
 
-.live-chapter-index {
+.live-step-index {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--nolyra-accent);
+  color: var(--codesema-accent);
 }
 
 .live-files {
@@ -434,7 +434,7 @@ function severityDot(severity?: string): string {
 .live-file-path {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   overflow-wrap: anywhere;
 }
 
@@ -447,7 +447,7 @@ function severityDot(severity?: string): string {
 .live-file-more {
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .live-waiting {
@@ -456,15 +456,15 @@ function severityDot(severity?: string): string {
   gap: 10px;
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--nolyra-ink-3);
+  color: var(--codesema-ink-3);
 }
 
 .live-spinner {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--nolyra-line);
-  border-top-color: var(--nolyra-accent);
+  border: 2px solid var(--codesema-line);
+  border-top-color: var(--codesema-accent);
   animation: live-spin 0.8s linear infinite;
 }
 
@@ -475,7 +475,7 @@ function severityDot(severity?: string): string {
 }
 
 .live-phase {
-  color: var(--nolyra-ink-2);
+  color: var(--codesema-ink-2);
   font-style: italic;
 }
 </style>
