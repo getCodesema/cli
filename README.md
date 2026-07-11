@@ -5,7 +5,7 @@
 [![node](https://img.shields.io/node/v/codesema)](https://nodejs.org)
 [![license](https://img.shields.io/npm/l/codesema)](LICENSE)
 
-Local merge request review, told as chapters. **Your** AI agent (Claude Code, Codex, …) does the review with the subscription you already pay for; `codesema` prepares the diff and displays the result in a local web UI. No account, no API key, no cloud: everything happens on your machine.
+Local merge request review, step by step. **Your** AI agent (Claude Code, Codex, …) does the review with the subscription you already pay for; `codesema` prepares the diff and displays the result in a local web UI. No account, no API key, no cloud: everything happens on your machine.
 
 🌐 Website: **[codesema.com](https://codesema.com)** · 📦 npm: [`codesema`](https://www.npmjs.com/package/codesema)
 
@@ -33,8 +33,8 @@ Re-running on the same branch reviews **incrementally**: the agent gets the prev
 ```
 
 1. **prep** detects the target branch (via `glab`/`gh` if an MR/PR exists, else `origin/HEAD`, else nearest merge-base among develop/main/master) and computes the MR diff.
-2. **Your agent** reviews the diff like a senior reviewer and writes a structured review: prologue, ordered chapters with risk/take/check, typed findings (security/perf/convention/design/praise/why), and what to review first.
-3. **The local web UI** shows the review in progress, then switches to the full experience: guided chapter-by-chapter reading, split/unified diff with inline notes, file tree, read/checked progress.
+2. **Your agent** reviews the diff like a senior reviewer and writes a structured review: prologue, ordered steps with risk/take/check, typed findings (security/perf/convention/design/praise/why), and what to review first.
+3. **The local web UI** shows the review in progress, then switches to the full experience: guided step-by-step reading, split/unified diff with inline notes, file tree, read/checked progress.
 
 ## Requirements
 
