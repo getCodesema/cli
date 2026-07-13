@@ -81,7 +81,12 @@ codesema config                # change language / agent / model / effort
 codesema prep                  # only write .codesema/input.json for your own agent flow
 codesema show                  # only display .codesema/review.json (or the last archived review)
 codesema export --out review.md   # Markdown export (--out - for stdout)
+codesema sync                  # push the latest review to a free anonymous codesema.com workspace
+codesema sync delete           # erase all synced data and local credentials
+codesema link <code>           # attach the workspace to a codesema.com account via a pairing code
 ```
+
+Sync is opt-in and free; your review record (including the diff) is only sent when you run `codesema sync`.
 
 `codesema --help` lists every flag.
 

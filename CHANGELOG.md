@@ -8,6 +8,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Added
 
 - `@codesema/contract` package: the review contract (types + sanitizers) extracted from the CLI and published so codesema.com can validate synced reviews with the same code.
+- `codesema sync`: push the latest review to a free anonymous codesema.com workspace (opt-in, explicit confirmation on first run).
+- `codesema sync delete`: erase all synced data and local credentials.
+- `codesema link <code>`: attach the workspace to a codesema.com account via a pairing code.
 
 ## [0.5.0] - unreleased
 
