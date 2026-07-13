@@ -32,7 +32,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 - Review prompt: when `language` is set, the agent writes the review in that language instead of inferring it from the commit messages (unchanged fallback when unset).
 
-## [0.4.0] - unreleased
+## [0.4.0] - 2026-07-11
 
 ### Added
 
