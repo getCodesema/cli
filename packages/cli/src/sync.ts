@@ -3,9 +3,10 @@ import { loadGlobalConfig, saveGlobalConfig } from './config.js'
 import { detectDiffSecrets, type ReviewRecord, type SecretMatch } from './contract.js'
 import { repoRoot, tryGit } from './git.js'
 import { t } from './i18n.js'
+import { openBrowser } from './open.js'
 import { resolveRecord } from './record.js'
 import { isInteractive, select } from './tui.js'
-import { GREEN, bold, dim, paint, renderFieldRows, type FieldRow } from './ui.js'
+import { ACCENT, GREEN, bold, dim, paint, renderFieldRows, startSpinner, underline, type FieldRow } from './ui.js'
 
 /**
  * bkctl-style operation result: a blank line, a status line, an indented detail
@@ -134,6 +135,56 @@ export async function linkWorkspace(
   )
 }
 
+export type LinkRequest = { code: string; verifyUrl: string; expiresAt: string }
+export type LinkRequestStatus = 'pending' | 'confirmed' | 'expired'
+
+export async function createLinkRequest(
+  creds: SyncCredentials,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LinkRequest> {
+  return api(
+    `${creds.url}/api/cli/link-requests`,
+    { method: 'POST', headers: authHeader(creds) },
+    (raw) =>
+      nonEmptyString(raw.code) && nonEmptyString(raw.verify_url) && nonEmptyString(raw.expires_at)
+        ? { code: raw.code, verifyUrl: raw.verify_url, expiresAt: raw.expires_at }
+        : null,
+    fetchImpl,
+  )
+}
+
+export async function getLinkRequestStatus(
+  code: string,
+  creds: SyncCredentials,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LinkRequestStatus> {
+  return api(
+    `${creds.url}/api/cli/link-requests/${encodeURIComponent(code)}`,
+    { method: 'GET', headers: authHeader(creds) },
+    (raw) => (raw.status === 'pending' || raw.status === 'confirmed' || raw.status === 'expired' ? raw.status : null),
+    fetchImpl,
+  )
+}
+
+// The server expires the request after its TTL; the local deadline is only a
+// backstop against a stub or proxy that would answer `pending` forever.
+const LINK_POLL_BACKSTOP_MS = 15 * 60_000
+
+async function waitForLinkConfirmation(
+  code: string,
+  creds: SyncCredentials,
+  fetchImpl: typeof fetch,
+  pollIntervalMs: number,
+): Promise<LinkRequestStatus> {
+  const deadline = Date.now() + LINK_POLL_BACKSTOP_MS
+  for (;;) {
+    const status = await getLinkRequestStatus(code, creds, fetchImpl)
+    if (status !== 'pending') return status
+    if (Date.now() > deadline) return 'expired'
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+  }
+}
+
 export async function deleteWorkspaceData(
   creds: SyncCredentials,
   fetchImpl: typeof fetch = fetch,
@@ -222,10 +273,49 @@ export async function syncCommand(opts: { action?: string; cwd: string; force?: 
   console.log(`  ${dim(t('sync.linkHint'))}`)
 }
 
-export async function linkCommand(opts: { code?: string }): Promise<void> {
-  if (!opts.code) throw new Error(t('sync.linkUsage'))
-  const creds = loadSyncCredentials()
-  if (!creds) throw new Error(t('sync.noCredentials'))
-  const { tenant_id } = await linkWorkspace(opts.code, creds)
-  printOperationResult(t('sync.linked', { url: creds.url }), [{ label: t('field.account'), value: tenant_id }])
+export async function linkCommand(opts: {
+  code?: string
+  fetchImpl?: typeof fetch
+  openUrl?: (url: string) => void
+  pollIntervalMs?: number
+}): Promise<void> {
+  const fetchImpl = opts.fetchImpl ?? fetch
+
+  // Explicit pairing code (generated in the dashboard settings): direct link.
+  if (opts.code) {
+    const creds = loadSyncCredentials()
+    if (!creds) throw new Error(t('sync.noCredentials'))
+    const { tenant_id } = await linkWorkspace(opts.code, creds, fetchImpl)
+    printOperationResult(t('sync.linked', { url: creds.url }), [{ label: t('field.account'), value: tenant_id }])
+    return
+  }
+
+  // No code: browser flow. The CLI asks the server for a short-lived link
+  // request, opens the confirmation page, and polls until the user confirms.
+  const creds = await ensureCredentials()
+  if (!creds) {
+    console.log(`  ${t('sync.aborted')}`)
+    return
+  }
+  const request = await createLinkRequest(creds, fetchImpl)
+  console.log('')
+  console.log(`  ${t('sync.linkBrowserOpen')}`)
+  console.log(`  ${underline(paint(request.verifyUrl, ACCENT))}`)
+  console.log('')
+  ;(opts.openUrl ?? openBrowser)(request.verifyUrl)
+
+  const spinner = startSpinner(t('sync.linkWaiting'))
+  let status: LinkRequestStatus
+  try {
+    status = await waitForLinkConfirmation(request.code, creds, fetchImpl, opts.pollIntervalMs ?? 2000)
+  } catch (err) {
+    spinner.stop(`  ${t('sync.linkFailed')}`)
+    throw err
+  }
+  if (status !== 'confirmed') {
+    spinner.stop(`  ${t('sync.linkFailed')}`)
+    throw new Error(t('sync.linkExpired'))
+  }
+  spinner.stop('')
+  printOperationResult(t('sync.linked', { url: creds.url }), [])
 }

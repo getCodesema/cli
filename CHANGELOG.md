@@ -7,6 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Added
 
+- `codesema link` without a code now links through the browser: the CLI opens a codesema.com confirmation page for the workspace and waits until you approve it there — no pairing code to copy. `codesema link <code>` keeps working as the no-browser fallback, and the menu's "Link account" entry uses the browser flow.
+
 - Focus mode: a problems-first view of the review. Actionable findings on the left with checkboxes, the selected problem's note and its code excerpt on the right, previous/next stepping, and "Copy selection for agent" scoped to the checked findings.
 - Run fixes: a button in focus mode asks the configured agent to apply the selected findings to the working tree (headless run with edit permissions, per-session token on the local endpoint, warning when the branch moved since the review). `codesema show` exposes it too when an agent is available.
 - Guided reading: a floating Next/Previous pill walks the agent's notes one by one across steps, scrolling to each annotation in the diff and marking steps as read along the way.

@@ -4,7 +4,7 @@ import { t } from './i18n.js'
 import { review } from './review.js'
 import { show } from './show.js'
 import { linkCommand, loadSyncCredentials, syncCommand } from './sync.js'
-import { select, textInput } from './tui.js'
+import { select } from './tui.js'
 import { configCommand } from './wizard.js'
 
 export type MenuItemId = 'review' | 'show' | 'cloud' | 'config' | 'quit'
@@ -85,11 +85,7 @@ function buildActions(cwd: string): MenuActions {
     review: () => review({ open: true, cwd }),
     show: () => show({ open: true, cwd, port: loadConfig(tryGit(['rev-parse', '--show-toplevel'], cwd)).port }),
     sync: () => syncCommand({ cwd }),
-    link: async () => {
-      const code = await textInput({ title: t('menu.linkPrompt') })
-      if (!code) return
-      await linkCommand({ code })
-    },
+    link: () => linkCommand({}),
     syncDelete: () => syncCommand({ action: 'delete', cwd }),
     config: () => configCommand(tryGit(['rev-parse', '--show-toplevel'], cwd)),
   }

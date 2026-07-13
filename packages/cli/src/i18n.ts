@@ -25,7 +25,7 @@ Usage:
                                       Export the review as Markdown (--out - for stdout)
   codesema sync              Push the latest review to your codesema.com workspace
   codesema sync delete       Delete all synced data (unlinked workspaces only)
-  codesema link <code>       Link this workspace to your codesema.com account
+  codesema link [code]       Link this workspace to your codesema.com account (no code: confirm in the browser)
 
 Options:
   --branch <name>     Local branch to review (default: interactive picker, else current branch)
@@ -242,9 +242,12 @@ version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
   'sync.secretsHint': 'remove them from the diff, or pass --force to sync anyway',
   'sync.secretsForced': 'secrets detected in the diff, syncing anyway (--force)',
   'sync.linkHint':
-    'Tip: create an account on codesema.com, generate a pairing code in Settings, then run `codesema link <code>` to see your reviews online.',
+    'Tip: run `codesema link` to attach this workspace to a codesema.com account and see your reviews online.',
   'sync.linked': 'Workspace linked to your account on {url}.',
-  'sync.linkUsage': 'usage: codesema link <code> (generate the code in codesema.com Settings)',
+  'sync.linkBrowserOpen': 'Confirm the link in your browser:',
+  'sync.linkWaiting': 'Waiting for the confirmation in the browser… (Ctrl+C to cancel)',
+  'sync.linkFailed': 'Link not confirmed.',
+  'sync.linkExpired': 'the link request expired before being confirmed: run `codesema link` again',
   'sync.deleted': 'All synced data deleted and local credentials cleared.',
   'sync.noCredentials': 'no synced workspace on this machine (run `codesema sync` first)',
   'sync.nonInteractiveSetup': 'sync is not set up: run `codesema sync` once in an interactive terminal to opt in',
@@ -261,8 +264,7 @@ version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
   'menu.syncHintPush': 'push the latest review',
   'menu.syncHintSetup': 'not set up yet',
   'menu.link': 'Link account',
-  'menu.linkHint': 'attach this workspace to your codesema.com account',
-  'menu.linkPrompt': 'Pairing code',
+  'menu.linkHint': 'confirm in the browser to attach this workspace to your account',
   'menu.syncDelete': 'Delete synced data',
   'menu.syncDeleteHint': 'erase everything from codesema.com',
   'menu.syncDeleteConfirm': 'Delete all synced data?',
@@ -307,7 +309,7 @@ Usage :
                                       Exporte la revue en Markdown (--out - pour stdout)
   codesema sync              Pousse la dernière review vers votre workspace codesema.com
   codesema sync delete       Supprime toutes les données synchronisées (workspaces non rattachés)
-  codesema link <code>       Rattache ce workspace à votre compte codesema.com
+  codesema link [code]       Rattache ce workspace à votre compte codesema.com (sans code : confirmation navigateur)
 
 Options :
   --branch <nom>      Branche locale à passer en revue (défaut : sélecteur interactif, sinon branche courante)
@@ -524,9 +526,12 @@ version existe (rien n'est envoyé). CODESEMA_NO_UPDATE_CHECK=1 pour désactiver
   'sync.secretsHint': 'retirez-les du diff, ou passez --force pour synchroniser quand même',
   'sync.secretsForced': 'secrets détectés dans le diff, synchronisation quand même (--force)',
   'sync.linkHint':
-    'Astuce : créez un compte sur codesema.com, générez un code d\'appairage dans Settings, puis lancez `codesema link <code>` pour retrouver vos reviews en ligne.',
+    'Astuce : lancez `codesema link` pour rattacher ce workspace à un compte codesema.com et retrouver vos reviews en ligne.',
   'sync.linked': 'Workspace rattaché à votre compte sur {url}.',
-  'sync.linkUsage': 'usage : codesema link <code> (générez le code dans les Settings de codesema.com)',
+  'sync.linkBrowserOpen': 'Confirmez le rattachement dans votre navigateur :',
+  'sync.linkWaiting': 'En attente de la confirmation dans le navigateur… (Ctrl+C pour annuler)',
+  'sync.linkFailed': 'Rattachement non confirmé.',
+  'sync.linkExpired': 'la demande de rattachement a expiré avant d\'être confirmée : relancez `codesema link`',
   'sync.deleted': 'Données synchronisées supprimées et credentials locaux effacés.',
   'sync.noCredentials': 'aucun workspace synchronisé sur cette machine (lancez `codesema sync` d\'abord)',
   'sync.nonInteractiveSetup': 'sync non configuré : lancez `codesema sync` une fois dans un terminal interactif pour l\'activer',
@@ -543,8 +548,7 @@ version existe (rien n'est envoyé). CODESEMA_NO_UPDATE_CHECK=1 pour désactiver
   'menu.syncHintPush': 'pousser la dernière revue',
   'menu.syncHintSetup': 'pas encore configuré',
   'menu.link': 'Rattacher le compte',
-  'menu.linkHint': 'rattacher ce workspace à votre compte codesema.com',
-  'menu.linkPrompt': 'Code d\'appairage',
+  'menu.linkHint': 'confirmer dans le navigateur pour rattacher ce workspace à votre compte',
   'menu.syncDelete': 'Supprimer les données synchronisées',
   'menu.syncDeleteHint': 'efface tout sur codesema.com',
   'menu.syncDeleteConfirm': 'Supprimer toutes les données synchronisées ?',

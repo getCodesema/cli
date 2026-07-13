@@ -12,6 +12,7 @@ import { t } from './i18n.js'
 import { linkCommand, syncCommand } from './sync.js'
 
 const PAIRING_CODE = 'ABCD2345'
+const LINK_REQUEST_CODE = 'LNKR2345'
 const AUTH_PATTERN = /^Bearer csk_[^.]+\.[^.]+$/
 
 type RecordedRequest = {
@@ -24,6 +25,8 @@ type RecordedRequest = {
 type StubServer = {
   url: string
   requests: RecordedRequest[]
+  /** Poll answers for GET /api/cli/link-requests/:code; the last one repeats. */
+  linkRequestStatuses: string[]
   close: () => Promise<void>
 }
 
@@ -61,6 +64,7 @@ function startStubServer(): Promise<StubServer> {
   const requests: RecordedRequest[] = []
   const dedupedKeys = new Set<string>()
   let reviewCounter = 0
+  const linkRequestStatuses = ['pending', 'confirmed']
 
   const server: Server = createServer((req, res) => {
     void (async () => {
@@ -109,6 +113,29 @@ function startStubServer(): Promise<StubServer> {
         return
       }
 
+      if (req.method === 'POST' && path === '/api/cli/link-requests') {
+        if (!authorized) {
+          sendJson(res, 401, { error: 'unauthorized' })
+          return
+        }
+        sendJson(res, 200, {
+          code: LINK_REQUEST_CODE,
+          verify_url: `http://dashboard.stub.local/link-cli?code=${LINK_REQUEST_CODE}`,
+          expires_at: new Date(Date.now() + 600_000).toISOString(),
+        })
+        return
+      }
+
+      if (req.method === 'GET' && path === `/api/cli/link-requests/${LINK_REQUEST_CODE}`) {
+        if (!authorized) {
+          sendJson(res, 401, { error: 'unauthorized' })
+          return
+        }
+        const status = linkRequestStatuses.length > 1 ? linkRequestStatuses.shift() : linkRequestStatuses[0]
+        sendJson(res, 200, { status })
+        return
+      }
+
       if (req.method === 'POST' && path === '/api/cli/link') {
         if (!authorized) {
           sendJson(res, 401, { error: 'unauthorized' })
@@ -142,6 +169,7 @@ function startStubServer(): Promise<StubServer> {
       resolve({
         url: `http://127.0.0.1:${port}`,
         requests,
+        linkRequestStatuses,
         close: () => new Promise((res) => server.close(() => res())),
       })
     })
@@ -350,6 +378,37 @@ describe('sync and link commands', () => {
     seedCredentials()
 
     await expect(linkCommand({ code: 'WRONGCODE' })).rejects.toThrow('invalid or expired pairing code')
+  })
+
+  test('linkCommand without a code opens the browser page and polls until confirmed', async () => {
+    seedCredentials()
+    const opened: string[] = []
+
+    await linkCommand({ openUrl: (url) => opened.push(url), pollIntervalMs: 5 })
+
+    expect(opened).toEqual([`http://dashboard.stub.local/link-cli?code=${LINK_REQUEST_CODE}`])
+    const created = stub.requests.find((r) => r.method === 'POST' && r.path === '/api/cli/link-requests')
+    expect(created).toBeDefined()
+    expect(created!.headers.authorization).toBe('Bearer csk_ws-seed-1.secret-seed-1')
+    const polls = stub.requests.filter(
+      (r) => r.method === 'GET' && r.path === `/api/cli/link-requests/${LINK_REQUEST_CODE}`,
+    )
+    expect(polls.length).toBeGreaterThanOrEqual(2)
+  })
+
+  test('linkCommand without a code fails cleanly when the request expires unconfirmed', async () => {
+    seedCredentials()
+    stub.linkRequestStatuses.length = 0
+    stub.linkRequestStatuses.push('pending', 'expired')
+
+    await expect(linkCommand({ openUrl: () => {}, pollIntervalMs: 5 })).rejects.toThrow(t('sync.linkExpired'))
+  })
+
+  test('linkCommand without a code and without credentials refuses outside a TTY', async () => {
+    await withoutTTY(async () => {
+      await expect(linkCommand({ openUrl: () => {} })).rejects.toThrow(t('sync.nonInteractiveSetup'))
+    })
+    expect(stub.requests.find((r) => r.path === '/api/cli/link-requests')).toBeUndefined()
   })
 
   test('syncCommand delete calls DELETE with the token and clears stored credentials', async () => {
