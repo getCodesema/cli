@@ -86,7 +86,7 @@ codesema sync delete           # erase all synced data and local credentials
 codesema link <code>           # attach the workspace to a codesema.com account via a pairing code
 ```
 
-Sync is opt-in and free; your review record (including the diff) is only sent when you run `codesema sync`.
+Sync is opt-in and free; your review record (including the diff) is only sent when you run `codesema sync`. Workspace credentials are stored in the global config file (`~/.config/codesema/config.json`), written with owner-only permissions (`0600`); sync settings in a repo's `.codesema/config.json` are ignored.
 
 `codesema --help` lists every flag.
 

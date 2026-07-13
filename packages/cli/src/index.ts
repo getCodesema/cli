@@ -4,7 +4,7 @@ import { loadConfig } from './config.js'
 import { setLanguage, t } from './i18n.js'
 import { exportCommand } from './export.js'
 import { tryGit } from './git.js'
-import { runMenu } from './menu.js'
+import { reviewFlagsPassed, runMenu } from './menu.js'
 import { prep } from './prep.js'
 import { review } from './review.js'
 import { show } from './show.js'
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
     console.log(t('cli.help'))
     return
   }
-  if (positionals[0] === undefined && isInteractive()) {
+  if (positionals[0] === undefined && !reviewFlagsPassed(values) && isInteractive()) {
     await runMenu({ cwd: process.cwd() })
     return
   }

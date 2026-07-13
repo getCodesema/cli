@@ -11,8 +11,8 @@
     "build:contract": "bun run --cwd packages/contract build",
     "build:web": "bun run --cwd packages/web build",
     "build:cli": "bun run --cwd packages/cli build",
-    "typecheck": "bun run --cwd packages/contract typecheck && bun run --cwd packages/cli typecheck && bun run --cwd packages/web typecheck",
-    "test": "bun test packages/cli packages/web packages/contract"
+    "typecheck": "bun run build:contract && bun run --cwd packages/contract typecheck && bun run --cwd packages/cli typecheck && bun run --cwd packages/web typecheck",
+    "test": "bun run build:contract && bun test packages/cli packages/web packages/contract"
   },
   "engines": {
     "node": ">=20"

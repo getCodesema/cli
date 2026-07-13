@@ -58,6 +58,15 @@ export function buildCloudMenuItems(context: MenuContext): MenuItem<CloudItemId>
   return items
 }
 
+const REVIEW_FLAGS = ['branch', 'target', 'agent', 'full', 'no-open', 'port', 'timeout'] as const
+
+// Bare `codesema` opens the menu, but `codesema --branch x` has always meant
+// "review that branch": any review flag falls through to the review command
+// instead of being silently dropped by the menu.
+export function reviewFlagsPassed(values: Record<string, unknown>): boolean {
+  return REVIEW_FLAGS.some((flag) => values[flag] !== undefined)
+}
+
 export type MenuActions = Record<MenuActionId, () => Promise<void>>
 
 export function dispatchMenuAction(id: MenuActionId, actions: MenuActions): Promise<void> {
@@ -71,19 +80,6 @@ function currentContext(cwd: string): MenuContext {
   }
 }
 
-async function confirmSyncDelete(): Promise<boolean> {
-  const choice = await select<'cancel' | 'delete'>({
-    title: t('menu.syncDeleteConfirm'),
-    options: [
-      { label: t('menu.syncDeleteConfirmCancel'), hint: '', value: 'cancel' },
-      { label: t('menu.syncDeleteConfirmDelete'), hint: t('menu.syncDeleteConfirmDeleteHint'), value: 'delete' },
-    ],
-    initialIndex: 0,
-    summary: false,
-  })
-  return choice === 'delete'
-}
-
 function buildActions(cwd: string): MenuActions {
   return {
     review: () => review({ open: true, cwd }),
@@ -94,10 +90,7 @@ function buildActions(cwd: string): MenuActions {
       if (!code) return
       await linkCommand({ code })
     },
-    syncDelete: async () => {
-      if (!(await confirmSyncDelete())) return
-      await syncCommand({ action: 'delete', cwd })
-    },
+    syncDelete: () => syncCommand({ action: 'delete', cwd }),
     config: () => configCommand(tryGit(['rev-parse', '--show-toplevel'], cwd)),
   }
 }

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { isSupportedLanguage, type SupportedLanguage } from './i18n.js'
@@ -21,7 +21,9 @@ export type CodesemaConfig = {
   syncSecret?: string
 }
 
-function parseConfig(path: string): CodesemaConfig {
+type ConfigScope = 'global' | 'repo'
+
+function parseConfig(path: string, scope: ConfigScope): CodesemaConfig {
   if (!existsSync(path)) return {}
   try {
     const raw = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
@@ -33,9 +35,11 @@ function parseConfig(path: string): CodesemaConfig {
       ...(str(raw.effort) ? { effort: str(raw.effort) } : {}),
       ...(str(raw.target) ? { target: str(raw.target) } : {}),
       ...(isSupportedLanguage(raw.language) ? { language: raw.language } : {}),
-      ...(str(raw.syncUrl) ? { syncUrl: str(raw.syncUrl) } : {}),
-      ...(str(raw.syncWorkspaceId) ? { syncWorkspaceId: str(raw.syncWorkspaceId) } : {}),
-      ...(str(raw.syncSecret) ? { syncSecret: str(raw.syncSecret) } : {}),
+      // Sync fields are global-only: a cloned repo's .codesema/config.json must
+      // never be able to redirect where reviews (diff included) are sent.
+      ...(scope === 'global' && str(raw.syncUrl) ? { syncUrl: str(raw.syncUrl) } : {}),
+      ...(scope === 'global' && str(raw.syncWorkspaceId) ? { syncWorkspaceId: str(raw.syncWorkspaceId) } : {}),
+      ...(scope === 'global' && str(raw.syncSecret) ? { syncSecret: str(raw.syncSecret) } : {}),
       ...(Number.isInteger(raw.port) ? { port: raw.port as number } : {}),
       ...(Number.isInteger(raw.timeout) ? { timeout: raw.timeout as number } : {}),
     }
@@ -44,8 +48,8 @@ function parseConfig(path: string): CodesemaConfig {
   }
 }
 
-function writeConfig(path: string, config: CodesemaConfig): string {
-  writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`)
+function writeConfig(path: string, config: CodesemaConfig, options?: { mode: number }): string {
+  writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, options)
   return path
 }
 
@@ -60,12 +64,16 @@ export function globalConfigPath(): string {
 }
 
 export function loadGlobalConfig(): CodesemaConfig {
-  return parseConfig(globalConfigPath())
+  return parseConfig(globalConfigPath(), 'global')
 }
 
 export function saveGlobalConfig(config: CodesemaConfig): string {
   mkdirSync(globalConfigDir(), { recursive: true })
-  return writeConfig(globalConfigPath(), config)
+  // The global config can hold the sync workspace secret: owner-only permissions,
+  // re-tightened on every save because the mode option only applies at creation.
+  const path = writeConfig(globalConfigPath(), config, { mode: 0o600 })
+  chmodSync(path, 0o600)
+  return path
 }
 
 export function repoConfigPath(repoRoot: string): string {
@@ -73,7 +81,7 @@ export function repoConfigPath(repoRoot: string): string {
 }
 
 export function loadRepoConfig(repoRoot: string): CodesemaConfig {
-  return parseConfig(repoConfigPath(repoRoot))
+  return parseConfig(repoConfigPath(repoRoot), 'repo')
 }
 
 export function saveRepoConfig(repoRoot: string, config: CodesemaConfig): string {

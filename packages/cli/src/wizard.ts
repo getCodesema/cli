@@ -256,10 +256,12 @@ export async function configCommand(repoRoot: string | null): Promise<void> {
     throw new Error(t('config.notInteractive'))
   }
 
+  // One blank before the loop, like runMenu: printing it per iteration would
+  // stack one line per cancelled round-trip and drift the in-place menu down.
+  console.log('')
   for (;;) {
     const current = loadConfig(repoRoot)
     const entries = describeConfigEntries(current)
-    console.log('')
     const picked = await select<ConfigEntryId>({
       title: t('config.menuTitle'),
       options: entries.map((entry) => ({
@@ -281,6 +283,7 @@ export async function configCommand(repoRoot: string | null): Promise<void> {
       const path = saveGlobalConfig({ ...loadGlobalConfig(), language })
       console.log('')
       console.log(`  ${t('config.languageSaved', { path })}`)
+      console.log('')
       continue
     }
 
@@ -326,4 +329,5 @@ async function configureAgent(repoRoot: string | null, current: CodesemaConfig):
   console.log('')
   console.log(`  ${t('config.agentSaved', { command: bold(result.command) })}`)
   console.log(`  ${dim(t('config.savedTo', { path }))}`)
+  console.log('')
 }

@@ -6,6 +6,7 @@ import {
   dispatchMenuAction,
   type MenuActionId,
   type MenuActions,
+  reviewFlagsPassed,
 } from './menu.js'
 
 afterEach(() => setLanguage(null))
@@ -72,6 +73,28 @@ describe('buildCloudMenuItems', () => {
     )
     expect(withCredentials?.hint).toBe(t('menu.syncHintPush'))
     expect(withoutCredentials?.hint).toBe(t('menu.syncHintSetup'))
+  })
+})
+
+describe('reviewFlagsPassed', () => {
+  test('a bare invocation opens the menu', () => {
+    expect(reviewFlagsPassed({})).toBe(false)
+  })
+
+  test('each review flag forces the review command instead of the menu', () => {
+    for (const flag of ['branch', 'target', 'agent', 'port', 'timeout']) {
+      expect(reviewFlagsPassed({ [flag]: 'x' })).toBe(true)
+    }
+    expect(reviewFlagsPassed({ full: true })).toBe(true)
+    expect(reviewFlagsPassed({ 'no-open': true })).toBe(true)
+  })
+
+  test('flags of other commands still open the menu', () => {
+    expect(reviewFlagsPassed({ review: 'develop-20260713', out: 'review.md' })).toBe(false)
+  })
+
+  test('a flag parsed as false still counts as passed', () => {
+    expect(reviewFlagsPassed({ full: false })).toBe(true)
   })
 })
 

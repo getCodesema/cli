@@ -15,6 +15,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Changed
 
 - "Copy for Claude Code" is now "Copy for agent" (the CLI drives Claude, Codex, Gemini or a custom agent).
+- `codesema sync delete` run directly from the CLI now asks the same confirmation as the menu when the terminal is interactive.
+
+### Fixed
+
+- Review flags (`--branch`, `--target`, `--agent`, `--full`, `--no-open`, `--port`, `--timeout`) passed without a command run a review again instead of being silently dropped by the interactive menu.
+- Sync API responses are validated before use: a malformed 2xx response now fails with a clear error instead of silently storing broken credentials.
+- Root `typecheck` and `test` scripts build `@codesema/contract` first, so a fresh clone passes without a manual build.
+- The `codesema config` menu no longer drifts down one line per cancelled navigation round-trip.
+
+### Security
+
+- Sync credentials are pinned to the base URL they were created against: changing `CODESEMA_SYNC_URL` later can no longer send the workspace secret to a different host.
+- Synced reviews no longer embed the absolute local repository path (`repo_root` is blanked before upload).
+- The global config file is written with owner-only permissions (0600) since it can hold the sync workspace secret.
+- Sync fields (`syncUrl`, `syncWorkspaceId`, `syncSecret`) in a repo's `.codesema/config.json` are ignored: only the global config decides where reviews are sent.
 
 ## [0.6.0] - 2026-07-13
 

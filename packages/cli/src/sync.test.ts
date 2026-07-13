@@ -3,7 +3,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadGlobalConfig, saveGlobalConfig } from './config.js'
-import { createWorkspace, deleteWorkspaceData, linkWorkspace, pushReview, syncBaseUrl } from './sync.js'
+import {
+  createWorkspace,
+  deleteWorkspaceData,
+  linkWorkspace,
+  loadSyncCredentials,
+  pushReview,
+  syncBaseUrl,
+} from './sync.js'
 import type { ReviewRecord } from './contract.js'
 
 type Call = { url: string; init: RequestInit }
@@ -68,6 +75,38 @@ describe('sync http client', () => {
     expect(loadGlobalConfig()).toMatchObject({ syncWorkspaceId: 'ws-1', syncSecret: 's3cret' })
   })
 
+  test('createWorkspace pins the base URL used at creation', async () => {
+    process.env.CODESEMA_SYNC_URL = 'http://staging:9080'
+    await createWorkspace(fetchStub(200, { workspace_id: 'ws-1', secret: 's3cret' }, []))
+    delete process.env.CODESEMA_SYNC_URL
+    expect(loadGlobalConfig().syncUrl).toBe('http://staging:9080')
+    expect(loadSyncCredentials()).toEqual({ url: 'http://staging:9080', workspaceId: 'ws-1', secret: 's3cret' })
+  })
+
+  test('credentials stay bound to their creation host when the env later changes', async () => {
+    await createWorkspace(fetchStub(200, { workspace_id: 'ws-1', secret: 's3cret' }, []))
+    process.env.CODESEMA_SYNC_URL = 'http://other-host:1'
+    expect(loadSyncCredentials()?.url).toBe('https://codesema.com')
+  })
+
+  test('legacy credentials without a stored url fall back to the resolved base url', () => {
+    saveGlobalConfig({ syncWorkspaceId: 'ws-1', syncSecret: 's3cret' })
+    process.env.CODESEMA_SYNC_URL = 'http://env:2'
+    expect(loadSyncCredentials()?.url).toBe('http://env:2')
+  })
+
+  test('a malformed 2xx creation response fails instead of storing broken credentials', async () => {
+    await expect(createWorkspace(fetchStub(200, {}, []))).rejects.toThrow('unexpected response from')
+    expect(loadGlobalConfig().syncWorkspaceId).toBeUndefined()
+    expect(loadGlobalConfig().syncSecret).toBeUndefined()
+  })
+
+  test('a creation response with empty fields is rejected too', async () => {
+    await expect(createWorkspace(fetchStub(200, { workspace_id: '', secret: '' }, []))).rejects.toThrow(
+      'unexpected response from',
+    )
+  })
+
   test('pushReview sends the bearer token and the ingest payload', async () => {
     const calls: Call[] = []
     const result = await pushReview(
@@ -82,6 +121,38 @@ describe('sync http client', () => {
     const body = JSON.parse(String(calls[0]!.init.body)) as { schema_version: number; repo: { remote_url: string } }
     expect(body.schema_version).toBe(1)
     expect(body.repo.remote_url).toBe('git@gitlab.com:acme/api.git')
+  })
+
+  test('pushReview strips the local repo path from the payload', async () => {
+    const calls: Call[] = []
+    await pushReview(
+      { record, remoteUrl: null, repoName: 'api' },
+      { url: 'https://codesema.com', workspaceId: 'ws-1', secret: 's3cret' },
+      fetchStub(200, { review_id: 'r1', deduplicated: false }, calls),
+    )
+    const body = JSON.parse(String(calls[0]!.init.body)) as { record: ReviewRecord }
+    expect(body.record.meta.repo_root).toBe('')
+    expect(record.meta.repo_root).toBe('/repo')
+  })
+
+  test('pushReview rejects a 2xx response missing the result fields', async () => {
+    await expect(
+      pushReview(
+        { record, remoteUrl: null, repoName: 'api' },
+        { url: 'https://codesema.com', workspaceId: 'ws-1', secret: 's3cret' },
+        fetchStub(200, { review_id: 'r1' }, []),
+      ),
+    ).rejects.toThrow('unexpected response from')
+  })
+
+  test('linkWorkspace rejects a 2xx response missing tenant_id', async () => {
+    await expect(
+      linkWorkspace(
+        'ABCD2345',
+        { url: 'https://codesema.com', workspaceId: 'ws-1', secret: 's3cret' },
+        fetchStub(200, {}, []),
+      ),
+    ).rejects.toThrow('unexpected response from')
   })
 
   test('linkWorkspace posts the pairing code', async () => {
@@ -104,6 +175,17 @@ describe('sync http client', () => {
     const config = loadGlobalConfig()
     expect(config.syncWorkspaceId).toBeUndefined()
     expect(config.syncSecret).toBeUndefined()
+  })
+
+  test('deleteWorkspaceData keeps credentials when the server does not confirm', async () => {
+    saveGlobalConfig({ syncWorkspaceId: 'ws-1', syncSecret: 's3cret' })
+    await expect(
+      deleteWorkspaceData(
+        { url: 'https://codesema.com', workspaceId: 'ws-1', secret: 's3cret' },
+        fetchStub(200, { ok: false }, []),
+      ),
+    ).rejects.toThrow('unexpected response from')
+    expect(loadGlobalConfig()).toMatchObject({ syncWorkspaceId: 'ws-1', syncSecret: 's3cret' })
   })
 
   test('an http error surfaces the server message', async () => {

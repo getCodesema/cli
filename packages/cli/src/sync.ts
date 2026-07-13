@@ -30,12 +30,21 @@ export function syncBaseUrl(): string {
 export function loadSyncCredentials(): SyncCredentials | null {
   const config = loadGlobalConfig()
   if (!config.syncWorkspaceId || !config.syncSecret) return null
-  return { url: syncBaseUrl(), workspaceId: config.syncWorkspaceId, secret: config.syncSecret }
+  // The secret is a bearer token: it is only ever sent to the host it was
+  // created against (stored syncUrl), so a later CODESEMA_SYNC_URL change
+  // cannot redirect it to another server. Credentials saved before the URL
+  // was persisted fall back to the resolved base URL.
+  return { url: config.syncUrl || syncBaseUrl(), workspaceId: config.syncWorkspaceId, secret: config.syncSecret }
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
 }
 
 async function api<T>(
   url: string,
   init: RequestInit,
+  parse: (body: Record<string, unknown>) => T | null,
   fetchImpl: typeof fetch,
 ): Promise<T> {
   let res: Response
@@ -53,7 +62,9 @@ async function api<T>(
     const message = typeof body.error === 'string' ? body.error : `HTTP ${res.status}`
     throw new Error(message)
   }
-  return body as T
+  const parsed = parse(body)
+  if (parsed === null) throw new Error(t('sync.badResponse', { url }))
+  return parsed
 }
 
 function authHeader(creds: SyncCredentials): Record<string, string> {
@@ -62,13 +73,17 @@ function authHeader(creds: SyncCredentials): Record<string, string> {
 
 export async function createWorkspace(fetchImpl: typeof fetch = fetch): Promise<SyncCredentials> {
   const url = syncBaseUrl()
-  const body = await api<{ workspace_id: string; secret: string }>(
+  const body = await api(
     `${url}/api/cli/workspaces`,
     { method: 'POST' },
+    (raw) =>
+      nonEmptyString(raw.workspace_id) && nonEmptyString(raw.secret)
+        ? { workspaceId: raw.workspace_id, secret: raw.secret }
+        : null,
     fetchImpl,
   )
-  saveGlobalConfig({ ...loadGlobalConfig(), syncWorkspaceId: body.workspace_id, syncSecret: body.secret })
-  return { url, workspaceId: body.workspace_id, secret: body.secret }
+  saveGlobalConfig({ ...loadGlobalConfig(), syncUrl: url, syncWorkspaceId: body.workspaceId, syncSecret: body.secret })
+  return { url, workspaceId: body.workspaceId, secret: body.secret }
 }
 
 export async function pushReview(
@@ -76,7 +91,7 @@ export async function pushReview(
   creds: SyncCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<PushResult> {
-  return api<PushResult>(
+  return api(
     `${creds.url}/api/cli/reviews`,
     {
       method: 'POST',
@@ -84,9 +99,15 @@ export async function pushReview(
       body: JSON.stringify({
         schema_version: 1,
         repo: { remote_url: input.remoteUrl, name: input.repoName },
-        record: input.record,
+        // repo_root is the user's absolute local path (home dir, username):
+        // useful in the local archive, never sent over the wire.
+        record: { ...input.record, meta: { ...input.record.meta, repo_root: '' } },
       }),
     },
+    (raw) =>
+      nonEmptyString(raw.review_id) && typeof raw.deduplicated === 'boolean'
+        ? { review_id: raw.review_id, deduplicated: raw.deduplicated }
+        : null,
     fetchImpl,
   )
 }
@@ -96,9 +117,10 @@ export async function linkWorkspace(
   creds: SyncCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ tenant_id: string }> {
-  return api<{ tenant_id: string }>(
+  return api(
     `${creds.url}/api/cli/link`,
     { method: 'POST', headers: authHeader(creds), body: JSON.stringify({ code }) },
+    (raw) => (nonEmptyString(raw.tenant_id) ? { tenant_id: raw.tenant_id } : null),
     fetchImpl,
   )
 }
@@ -107,9 +129,10 @@ export async function deleteWorkspaceData(
   creds: SyncCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
-  await api<{ ok: true }>(
+  await api(
     `${creds.url}/api/cli/workspaces`,
     { method: 'DELETE', headers: authHeader(creds) },
+    (raw) => (raw.ok === true ? { ok: true as const } : null),
     fetchImpl,
   )
   const { syncWorkspaceId: _id, syncSecret: _secret, ...rest } = loadGlobalConfig()
@@ -139,10 +162,27 @@ async function ensureCredentials(): Promise<SyncCredentials | null> {
   return createWorkspace()
 }
 
+// Deleting remote data is irreversible: every interactive path (menu or direct
+// `codesema sync delete`) confirms first; non-interactive runs stay scriptable.
+async function confirmSyncDelete(): Promise<boolean> {
+  if (!isInteractive()) return true
+  const choice = await select<'cancel' | 'delete'>({
+    title: t('menu.syncDeleteConfirm'),
+    options: [
+      { label: t('menu.syncDeleteConfirmCancel'), hint: '', value: 'cancel' },
+      { label: t('menu.syncDeleteConfirmDelete'), hint: t('menu.syncDeleteConfirmDeleteHint'), value: 'delete' },
+    ],
+    initialIndex: 0,
+    summary: false,
+  })
+  return choice === 'delete'
+}
+
 export async function syncCommand(opts: { action?: string; cwd: string }): Promise<void> {
   if (opts.action === 'delete') {
     const creds = loadSyncCredentials()
     if (!creds) throw new Error(t('sync.noCredentials'))
+    if (!(await confirmSyncDelete())) return
     await deleteWorkspaceData(creds)
     printOperationResult(t('sync.deleted'), [])
     return

@@ -152,6 +152,19 @@ function runGit(args: string[], cwd: string): void {
   execFileSync('git', args, { cwd, stdio: 'ignore' })
 }
 
+async function withoutTTY(run: () => Promise<void>): Promise<void> {
+  const previousStdinIsTTY = process.stdin.isTTY
+  const previousStdoutIsTTY = process.stdout.isTTY
+  process.stdin.isTTY = false
+  process.stdout.isTTY = false
+  try {
+    await run()
+  } finally {
+    process.stdin.isTTY = previousStdinIsTTY
+    process.stdout.isTTY = previousStdoutIsTTY
+  }
+}
+
 type ArchivedRepo = { repoDir: string; remoteUrl: string; record: ReviewRecord }
 
 function makeRepoWithArchivedReview(): ArchivedRepo {
@@ -288,7 +301,9 @@ describe('sync and link commands', () => {
   })
 
   test('syncCommand without credentials and without a TTY throws the non-interactive setup error', async () => {
-    await expect(syncCommand({ cwd: repoDir })).rejects.toThrow(t('sync.nonInteractiveSetup'))
+    await withoutTTY(async () => {
+      await expect(syncCommand({ cwd: repoDir })).rejects.toThrow(t('sync.nonInteractiveSetup'))
+    })
     const pushed = stub.requests.find((r) => r.path === '/api/cli/reviews')
     expect(pushed).toBeUndefined()
   })
@@ -331,7 +346,7 @@ describe('sync and link commands', () => {
   test('syncCommand delete calls DELETE with the token and clears stored credentials', async () => {
     seedCredentials()
 
-    await syncCommand({ action: 'delete', cwd: repoDir })
+    await withoutTTY(() => syncCommand({ action: 'delete', cwd: repoDir }))
 
     const deleted = stub.requests.find((r) => r.method === 'DELETE' && r.path === '/api/cli/workspaces')
     expect(deleted).toBeDefined()

@@ -1,12 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   type CodesemaConfig,
+  globalConfigPath,
   isRepoAgentTrusted,
+  loadConfig,
   loadGlobalConfig,
+  loadRepoConfig,
   saveGlobalConfig,
+  saveRepoConfig,
   trustRepoAgent,
   trustStorePath,
 } from './config.js'
@@ -77,5 +81,56 @@ describe('sync credentials round-trip', () => {
   test('unknown or empty sync fields are dropped on load', () => {
     saveGlobalConfig({ syncWorkspaceId: '' } as CodesemaConfig)
     expect(loadGlobalConfig()).toEqual({})
+  })
+
+  test('the global config file is written owner-only (0600)', () => {
+    saveGlobalConfig({ syncSecret: 's3cret' })
+    expect(statSync(globalConfigPath()).mode & 0o777).toBe(0o600)
+  })
+
+  test('a pre-existing lax config file is re-tightened on save', () => {
+    writeFileSync(globalConfigPath(), '{}\n', { mode: 0o644 })
+    expect(statSync(globalConfigPath()).mode & 0o777).toBe(0o644)
+    saveGlobalConfig({ syncSecret: 's3cret' })
+    expect(statSync(globalConfigPath()).mode & 0o777).toBe(0o600)
+  })
+})
+
+describe('sync fields are global-only', () => {
+  const previousConfigDir = process.env.CODESEMA_CONFIG_DIR
+  let configDir: string
+  let repoDir: string
+
+  beforeEach(() => {
+    configDir = mkdtempSync(join(tmpdir(), 'codesema-scope-'))
+    repoDir = mkdtempSync(join(tmpdir(), 'codesema-repo-'))
+    process.env.CODESEMA_CONFIG_DIR = configDir
+  })
+
+  afterEach(() => {
+    if (previousConfigDir === undefined) delete process.env.CODESEMA_CONFIG_DIR
+    else process.env.CODESEMA_CONFIG_DIR = previousConfigDir
+    rmSync(configDir, { recursive: true, force: true })
+    rmSync(repoDir, { recursive: true, force: true })
+  })
+
+  test('sync fields in a repo config are ignored on load', () => {
+    saveRepoConfig(repoDir, {
+      agent: 'claude -p',
+      syncUrl: 'http://attacker:1',
+      syncWorkspaceId: 'ws-x',
+      syncSecret: 'stolen',
+    })
+    expect(loadRepoConfig(repoDir)).toEqual({ agent: 'claude -p' })
+  })
+
+  test('a repo config cannot override the global sync destination', () => {
+    saveGlobalConfig({ syncUrl: 'http://global:1', syncWorkspaceId: 'ws-1', syncSecret: 's3cret' })
+    saveRepoConfig(repoDir, { syncUrl: 'http://attacker:1' })
+    expect(loadConfig(repoDir)).toMatchObject({
+      syncUrl: 'http://global:1',
+      syncWorkspaceId: 'ws-1',
+      syncSecret: 's3cret',
+    })
   })
 })

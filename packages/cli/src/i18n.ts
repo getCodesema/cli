@@ -242,6 +242,7 @@ version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
   'sync.nonInteractiveSetup': 'sync is not set up: run `codesema sync` once in an interactive terminal to opt in',
   'sync.unknownAction': 'unknown sync action: {action} (expected `codesema sync` or `codesema sync delete`)',
   'sync.unreachable': 'could not reach {url}: check your connection or CODESEMA_SYNC_URL',
+  'sync.badResponse': 'unexpected response from {url}: required fields are missing or invalid',
 
   'menu.title': 'What do you want to do?',
   'menu.review': 'Review a branch',
@@ -515,6 +516,7 @@ version existe (rien n'est envoyé). CODESEMA_NO_UPDATE_CHECK=1 pour désactiver
   'sync.nonInteractiveSetup': 'sync non configuré : lancez `codesema sync` une fois dans un terminal interactif pour l\'activer',
   'sync.unknownAction': 'action sync inconnue : {action} (attendu `codesema sync` ou `codesema sync delete`)',
   'sync.unreachable': 'impossible de joindre {url} : vérifiez votre connexion ou CODESEMA_SYNC_URL',
+  'sync.badResponse': 'réponse inattendue de {url} : champs requis manquants ou invalides',
 
   'menu.title': 'Que voulez-vous faire ?',
   'menu.review': 'Passer une branche en revue',
