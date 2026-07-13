@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -53,8 +54,8 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 /**
  * Mirrors the Phase 1 `/api/cli` contract closely enough to exercise the CLI's
  * command layer end to end: real in-memory review dedup keyed on
- * branch+head_sha+created_at, and a bearer-token shape check on every
- * workspace-authenticated route.
+ * branch+head_sha+content hash (commits+diff+review), and a bearer-token
+ * shape check on every workspace-authenticated route.
  */
 function startStubServer(): Promise<StubServer> {
   const requests: RecordedRequest[] = []
@@ -82,9 +83,25 @@ function startStubServer(): Promise<StubServer> {
           sendJson(res, 401, { error: 'unauthorized' })
           return
         }
-        const payload = body as { record?: { meta?: { branch?: string; head_sha?: string; created_at?: string } } }
+        const payload = body as {
+          record?: {
+            commits?: ReviewRecord['commits']
+            diff?: ReviewRecord['diff']
+            review?: ReviewRecord['review']
+            meta?: { branch?: string; head_sha?: string }
+          }
+        }
         const meta = payload.record?.meta ?? {}
-        const key = `${meta.branch ?? ''}|${meta.head_sha ?? ''}|${meta.created_at ?? ''}`
+        const contentHash = createHash('sha256')
+          .update(
+            JSON.stringify({
+              commits: payload.record?.commits,
+              diff: payload.record?.diff,
+              review: payload.record?.review,
+            }),
+          )
+          .digest('hex')
+        const key = `${meta.branch ?? ''}|${meta.head_sha ?? ''}|${contentHash}`
         const deduplicated = dedupedKeys.has(key)
         dedupedKeys.add(key)
         reviewCounter += 1
@@ -238,6 +255,35 @@ describe('sync and link commands', () => {
     const firstBody = pushes[0]!.body as { record: { meta: { branch: string; head_sha?: string; created_at: string } } }
     const secondBody = pushes[1]!.body as { record: { meta: { branch: string; head_sha?: string; created_at: string } } }
     expect(secondBody.record.meta).toEqual(firstBody.record.meta)
+    expect(logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' })))).toBe(true)
+  })
+
+  test('a re-push of the same review with a different created_at is reported as deduplicated', async () => {
+    seedCredentials()
+    const archivePath = join(repoDir, '.codesema', 'reviews', 'feat-x-20260713-100000.json')
+    const logged: string[] = []
+    const originalLog = console.log
+    console.log = (...args: unknown[]) => {
+      logged.push(args.join(' '))
+    }
+
+    try {
+      await syncCommand({ cwd: repoDir })
+
+      const archived = JSON.parse(readFileSync(archivePath, 'utf8')) as ReviewRecord
+      archived.meta.created_at = '2026-07-13T11:30:00.000Z'
+      writeFileSync(archivePath, JSON.stringify(archived, null, 2))
+
+      await syncCommand({ cwd: repoDir })
+    } finally {
+      console.log = originalLog
+    }
+
+    const pushes = stub.requests.filter((r) => r.method === 'POST' && r.path === '/api/cli/reviews')
+    expect(pushes.length).toBe(2)
+    const firstBody = pushes[0]!.body as { record: { meta: { created_at: string } } }
+    const secondBody = pushes[1]!.body as { record: { meta: { created_at: string } } }
+    expect(secondBody.record.meta.created_at).not.toBe(firstBody.record.meta.created_at)
     expect(logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' })))).toBe(true)
   })
 
