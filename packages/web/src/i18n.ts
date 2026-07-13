@@ -11,7 +11,7 @@ const en = {
   'verdict.approve': 'Approved',
   'verdict.request_changes': 'Changes requested',
   'verdict.comment': 'Comment',
-  'header.copyPrompt': 'Copy for Claude Code ({n})',
+  'header.copyPrompt': 'Copy for agent ({n})',
   'header.copied': 'Copied ✓',
 
   'live.title': 'Review in progress',
@@ -105,7 +105,7 @@ const fr: Record<MessageKey, string> = {
   'verdict.approve': 'Approuvée',
   'verdict.request_changes': 'Changements demandés',
   'verdict.comment': 'Commentaire',
-  'header.copyPrompt': 'Copier pour Claude Code ({n})',
+  'header.copyPrompt': "Copier pour l'agent ({n})",
   'header.copied': 'Copié ✓',
 
   'live.title': 'Revue en cours',
