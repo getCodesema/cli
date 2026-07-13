@@ -6,7 +6,7 @@ import { exportCommand } from './export.js'
 import { tryGit } from './git.js'
 import { reviewFlagsPassed, runMenu } from './menu.js'
 import { prep } from './prep.js'
-import { review } from './review.js'
+import { review, REVIEW_GATE_VALUES, type ReviewGate } from './review.js'
 import { show } from './show.js'
 import { linkCommand, syncCommand } from './sync.js'
 import { isInteractive } from './tui.js'
@@ -22,6 +22,12 @@ function parseIntFlag(name: string, raw: string | undefined, min: number, max: n
   return n
 }
 
+function parseFailOn(raw: string | undefined): ReviewGate | undefined {
+  if (raw === undefined) return undefined
+  if ((REVIEW_GATE_VALUES as readonly string[]).includes(raw)) return raw as ReviewGate
+  throw new Error(t('cli.failOnError', { raw, values: REVIEW_GATE_VALUES.join(', ') }))
+}
+
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
@@ -35,6 +41,7 @@ async function main(): Promise<void> {
       timeout: { type: 'string' },
       full: { type: 'boolean' },
       force: { type: 'boolean' },
+      'fail-on': { type: 'string' },
       'no-open': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -66,6 +73,7 @@ async function main(): Promise<void> {
         port: parseIntFlag('port', values.port, 1, 65535),
         timeout: parseIntFlag('timeout', values.timeout, 1, 86400),
         full: values.full,
+        failOn: parseFailOn(values['fail-on']),
         open: !values['no-open'],
         cwd: process.cwd(),
       })

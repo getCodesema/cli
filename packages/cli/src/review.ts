@@ -8,6 +8,7 @@ import { isAncestor, repoRoot } from './git.js'
 import { reviewLanguage, t, uiLocale } from './i18n.js'
 import { notifyDesktop } from './notify.js'
 import { openBrowser } from './open.js'
+import type { FindingSeverity, SanitizedReview } from './contract.js'
 import type { PartialReview } from './partial.js'
 import { parsePartialReview } from './partial.js'
 import type { PrepInput } from './prep.js'
@@ -20,6 +21,21 @@ import { isInteractive, select } from './tui.js'
 import { ACCENT, GREEN, RED, bold, dim, paint, printBanner, printUpdateNotice, progressLabel, renderFieldRows, startSpinner, underline } from './ui.js'
 import { startUpdateCheck } from './version.js'
 import { AGENT_DEFS, defaultCommand, detectAgents, runOnboarding } from './wizard.js'
+
+export const REVIEW_GATE_EXIT_CODE = 2
+export type ReviewGate = FindingSeverity | 'request_changes'
+export const REVIEW_GATE_VALUES: readonly ReviewGate[] = ['critical', 'major', 'minor', 'info', 'request_changes']
+const SEVERITY_RANK: Record<FindingSeverity, number> = { info: 0, minor: 1, major: 2, critical: 3 }
+
+/** Returns a human reason when the review trips the gate, or null when it passes. */
+export function reviewGateReason(review: SanitizedReview, gate: ReviewGate): string | null {
+  if (gate === 'request_changes') {
+    return review.verdict === 'request_changes' ? t('review.gateReasonVerdict') : null
+  }
+  const threshold = SEVERITY_RANK[gate]
+  const count = review.findings.filter((f) => SEVERITY_RANK[f.severity] >= threshold).length
+  return count > 0 ? t('review.gateReasonSeverity', { n: count, level: gate }) : null
+}
 
 function languageRule(): string {
   const language = reviewLanguage()
@@ -221,6 +237,7 @@ export async function review(opts: {
   port?: number
   timeout?: number
   full?: boolean
+  failOn?: ReviewGate
   open: boolean
   interactive?: boolean
   cwd: string
@@ -278,7 +295,7 @@ export async function review(opts: {
   })
 
   const timeoutMs = (opts.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_S) * 1000
-  const { url } = await startServer(session, {
+  const { url, stop } = await startServer(session, {
     port: opts.port ?? config.port,
     locale: uiLocale(),
     fixRunner: createFixRunner({
@@ -313,7 +330,7 @@ export async function review(opts: {
   console.log('')
   renderFieldRows(headerRows).forEach((line) => console.log(line))
   console.log('')
-  if (opts.open) openBrowser(url)
+  if (opts.open && !opts.failOn) openBrowser(url)
 
   const shortCmd = agentCommand.length > 40 ? `${agentCommand.slice(0, 37)}…` : agentCommand
   const spinner = startSpinner(t('review.spinner', { cmd: shortCmd }))
@@ -341,6 +358,7 @@ export async function review(opts: {
     console.error(`codesema: ${t('review.runFailedDetail', { message })}`)
     console.log(`  ${t('review.stillUp', { url })}`)
     process.exitCode = 1
+    if (opts.failOn) await stop()
     return
   }
 
@@ -358,6 +376,7 @@ export async function review(opts: {
     console.error(`codesema: ${message}`)
     console.log(`  ${t('review.stillUp', { url })}`)
     process.exitCode = 1
+    if (opts.failOn) await stop()
     return
   }
 
@@ -385,5 +404,14 @@ export async function review(opts: {
         verdict: t(`verdict.${record.review.verdict}`),
       }),
     )
+  }
+
+  if (opts.failOn) {
+    const reason = reviewGateReason(record.review, opts.failOn)
+    if (reason) {
+      console.log(`  ${paint('✘', RED)} ${t('review.gateFailed', { reason })}`)
+      process.exitCode = REVIEW_GATE_EXIT_CODE
+    }
+    await stop()
   }
 }

@@ -47,6 +47,7 @@ version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
 `,
   'cli.unknownCommand': 'unknown command: {command}',
   'cli.intFlagError': '--{name} {raw}: expected an integer between {min} and {max}',
+  'cli.failOnError': 'invalid --fail-on {raw}: expected one of {values}',
 
   'git.notFound': 'git not found on PATH — install git (https://git-scm.com) and retry',
 
@@ -95,6 +96,9 @@ version exists (nothing is sent). Set CODESEMA_NO_UPDATE_CHECK=1 to disable.
   'review.runFailed': 'agent run failed',
   'review.runFailedDetail': 'agent run failed: {message}',
   'review.stillUp': '{url} still up · Ctrl+C to stop',
+  'review.gateFailed': 'CI gate failed: {reason}',
+  'review.gateReasonSeverity': '{n} finding(s) at or above {level}',
+  'review.gateReasonVerdict': 'changes requested',
   'review.unusableOutput': 'unusable agent output',
   'review.ready': 'review ready',
   'review.ctrlc': 'Ctrl+C to stop',
@@ -325,6 +329,7 @@ version existe (rien n'est envoyé). CODESEMA_NO_UPDATE_CHECK=1 pour désactiver
 `,
   'cli.unknownCommand': 'commande inconnue : {command}',
   'cli.intFlagError': '--{name} {raw} : entier attendu entre {min} et {max}',
+  'cli.failOnError': '--fail-on {raw} invalide : attendu l\'un de {values}',
 
   'git.notFound': 'git introuvable sur le PATH : installez git (https://git-scm.com) et réessayez',
 
@@ -373,6 +378,9 @@ version existe (rien n'est envoyé). CODESEMA_NO_UPDATE_CHECK=1 pour désactiver
   'review.runFailed': 'échec de l\'agent',
   'review.runFailedDetail': 'échec de l\'agent : {message}',
   'review.stillUp': '{url} toujours actif · Ctrl+C pour arrêter',
+  'review.gateFailed': 'gate CI échoué : {reason}',
+  'review.gateReasonSeverity': '{n} finding(s) au niveau {level} ou supérieur',
+  'review.gateReasonVerdict': 'changements demandés',
   'review.unusableOutput': 'sortie d\'agent inutilisable',
   'review.ready': 'revue prête',
   'review.ctrlc': 'Ctrl+C pour arrêter',
