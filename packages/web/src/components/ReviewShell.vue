@@ -210,6 +210,7 @@ const SEV_CLS: Record<string, string> = {
       <StepRail
         v-if="hasSteps"
         :steps="steps"
+        :findings="findings"
         :read-set="readSet"
         :current-index="guidedIndex"
         @select="onStepSelect"
