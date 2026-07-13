@@ -76,6 +76,20 @@ export type LiveStatus = {
   error?: string
 }
 
+// Mirrors packages/cli/src/fix.ts (FixStatus) and the /api/fix endpoints.
+
+export type FixStatus =
+  | { available: false }
+  | {
+      available: true
+      phase: 'idle' | 'running' | 'done' | 'error'
+      selected: number[]
+      started_at?: string
+      summary?: string
+      error?: string
+      head_moved: boolean
+    }
+
 export type PartialFinding = {
   file: string
   message: string

@@ -27,6 +27,11 @@ const en = {
   'focus.copySelected': 'Copy selection for agent ({n})',
   'focus.empty': 'No actionable finding in this review.',
   'focus.noExcerpt': 'This note is not anchored to a specific line.',
+  'focus.runFixes': 'Run fixes ({n})',
+  'focus.fixRunning': 'The agent is applying the fixes…',
+  'focus.fixDone': 'Fixes applied. Run a new review to verify.',
+  'focus.fixFailed': 'Fix run failed',
+  'focus.headMoved': 'The branch has moved since this review; the agent will patch the files as they are now.',
 
   'live.title': 'Review in progress',
   'live.errorTitle': 'The review failed',
@@ -140,6 +145,11 @@ const fr: Record<MessageKey, string> = {
   'focus.copySelected': "Copier la sélection pour l'agent ({n})",
   'focus.empty': 'Aucun problème à corriger dans cette revue.',
   'focus.noExcerpt': "Cette note n'est pas ancrée à une ligne précise.",
+  'focus.runFixes': 'Lancer les fix ({n})',
+  'focus.fixRunning': "L'agent applique les fix…",
+  'focus.fixDone': 'Fix appliqués. Relance une review pour vérifier.',
+  'focus.fixFailed': 'Le lancement des fix a échoué',
+  'focus.headMoved': "La branche a bougé depuis cette revue ; l'agent corrigera les fichiers dans leur état actuel.",
 
   'live.title': 'Revue en cours',
   'live.errorTitle': 'La revue a échoué',

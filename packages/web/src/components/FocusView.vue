@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { DiffFile, Finding, FindingSeverity } from '../composables/useDiff'
 import { excerptFor } from '../composables/useFocusList'
 import { buildFixPrompt } from '../composables/useFixPrompt'
-import type { ReviewRecord } from '../types'
+import type { FixStatus, ReviewRecord } from '../types'
 
 const props = defineProps<{
   record: ReviewRecord
@@ -67,7 +67,68 @@ async function copySelection() {
   }
 }
 
-onUnmounted(() => clearTimeout(copiedTimer))
+// ── Run fixes through the local CLI server ─────────────────────
+const isClient = typeof window !== 'undefined'
+const fixToken = isClient ? (window as { __CODESEMA_FIX_TOKEN__?: string }).__CODESEMA_FIX_TOKEN__ : undefined
+
+const fixStatus = ref<FixStatus | null>(null)
+const fixRequestError = ref<string | null>(null)
+let pollTimer: ReturnType<typeof setInterval> | undefined
+
+const fixDetail = computed(() => (fixStatus.value?.available ? fixStatus.value : null))
+const fixAvailable = computed(() => Boolean(fixToken) && fixDetail.value !== null)
+const fixRunning = computed(() => fixDetail.value?.phase === 'running')
+
+function stopPolling() {
+  if (!pollTimer) return
+  clearInterval(pollTimer)
+  pollTimer = undefined
+}
+
+function startPolling() {
+  if (!pollTimer) pollTimer = setInterval(() => void refreshFixStatus(), 1500)
+}
+
+async function refreshFixStatus(): Promise<void> {
+  try {
+    const res = await fetch('/api/fix/status')
+    if (!res.ok) return
+    const status = (await res.json()) as FixStatus
+    fixStatus.value = status
+    if (status.available && status.phase === 'running') startPolling()
+    else stopPolling()
+  } catch {
+    // local server stopped (Ctrl+C): keep the last known state
+  }
+}
+
+async function runFixes() {
+  if (!fixToken || selectedCount.value === 0 || fixRunning.value) return
+  fixRequestError.value = null
+  try {
+    const res = await fetch('/api/fix', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-codesema-fix-token': fixToken },
+      body: JSON.stringify({ findings: [...selected.value] }),
+    })
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      fixRequestError.value = body?.error ?? `HTTP ${res.status}`
+      return
+    }
+    await refreshFixStatus()
+    startPolling()
+  } catch (err) {
+    fixRequestError.value = err instanceof Error ? err.message : String(err)
+  }
+}
+
+onMounted(() => void refreshFixStatus())
+
+onUnmounted(() => {
+  clearTimeout(copiedTimer)
+  stopPolling()
+})
 
 type SevMeta = { labelKey: string; cls: string }
 
@@ -148,10 +209,29 @@ function richParts(s: string): { text: string; isCode: boolean }[] {
       </div>
 
       <div class="fv-list-foot">
+        <div v-if="fixAvailable && fixDetail?.head_moved && fixDetail.phase !== 'done'" class="fv-warn">
+          {{ $t('focus.headMoved') }}
+        </div>
+        <button
+          v-if="fixAvailable"
+          class="fv-run"
+          :disabled="selectedCount === 0 || fixRunning"
+          @click="runFixes"
+        >
+          <span v-if="fixRunning" class="fv-run-spin" aria-hidden="true" />
+          {{ fixRunning ? $t('focus.fixRunning') : $t('focus.runFixes', { n: selectedCount }) }}
+        </button>
         <button class="fv-copy" :class="{ 'fv-copy--done': copied }" :disabled="selectedCount === 0" @click="copySelection">
           {{ copied ? $t('header.copied') : $t('focus.copySelected', { n: selectedCount }) }}
         </button>
-        <slot name="actions" :selected="[...selected]" />
+        <p v-if="fixRequestError" class="fv-fix-error">{{ $t('focus.fixFailed') }} · {{ fixRequestError }}</p>
+        <div v-if="fixDetail?.phase === 'done'" class="fv-fix-done">
+          <div class="fv-fix-done-head">✓ {{ $t('focus.fixDone') }}</div>
+          <pre v-if="fixDetail.summary" class="fv-fix-summary">{{ fixDetail.summary }}</pre>
+        </div>
+        <p v-else-if="fixDetail?.phase === 'error'" class="fv-fix-error">
+          {{ $t('focus.fixFailed') }}<template v-if="fixDetail.error"> · {{ fixDetail.error }}</template>
+        </p>
       </div>
     </aside>
 
@@ -428,6 +508,92 @@ function richParts(s: string): { text: string; isCode: boolean }[] {
 .fv-copy--done {
   color: var(--codesema-risk-low);
   border-color: var(--codesema-risk-low);
+}
+
+.fv-warn {
+  border: 1px solid color-mix(in srgb, var(--codesema-amber) 30%, transparent);
+  border-radius: 8px;
+  background: var(--codesema-amber-soft);
+  color: var(--codesema-amber);
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+}
+
+.fv-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--codesema-accent);
+  background: var(--codesema-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.fv-run:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.fv-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fv-run-spin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, #fff 45%, transparent);
+  border-top-color: #fff;
+  animation: fv-spin 0.8s linear infinite;
+}
+
+@keyframes fv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fv-fix-error {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--codesema-risk-high);
+}
+
+.fv-fix-done {
+  border: 1px solid color-mix(in srgb, var(--codesema-risk-low) 35%, transparent);
+  border-radius: 8px;
+  background: var(--codesema-risk-low-soft);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fv-fix-done-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--codesema-risk-low);
+}
+
+.fv-fix-summary {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--codesema-ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 /* ── Right: focused problem ────────────────────────────────── */

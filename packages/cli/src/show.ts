@@ -1,3 +1,5 @@
+import { loadConfig } from './config.js'
+import { createFixRunner, DEFAULT_TIMEOUT_S } from './fix.js'
 import { repoRoot } from './git.js'
 import { t, uiLocale } from './i18n.js'
 import { openBrowser } from './open.js'
@@ -5,6 +7,7 @@ import { archiveRecord, resolveRecord } from './record.js'
 import { createSession, startServer } from './serve.js'
 import { printUpdateNotice } from './ui.js'
 import { startUpdateCheck } from './version.js'
+import { defaultCommand, detectAgents } from './wizard.js'
 
 export async function show(opts: { review?: string; port?: number; open: boolean; cwd: string }): Promise<void> {
   const latestVersion = startUpdateCheck()
@@ -18,7 +21,18 @@ export async function show(opts: { review?: string; port?: number; open: boolean
   }
 
   const session = createSession({ record })
-  const { url } = await startServer(session, { port: opts.port, locale: uiLocale() })
+  const config = loadConfig(cwd)
+  const [detected] = detectAgents(cwd)
+  const agentCommand = config.agent ?? (detected ? defaultCommand(detected) : undefined)
+  const fixRunner = agentCommand
+    ? createFixRunner({
+        getRecord: () => session.record(),
+        cwd,
+        command: agentCommand,
+        timeoutMs: (config.timeout ?? DEFAULT_TIMEOUT_S) * 1000,
+      })
+    : undefined
+  const { url } = await startServer(session, { port: opts.port ?? config.port, locale: uiLocale(), fixRunner })
   console.log('')
   console.log(`codesema — ${record.meta.branch} → ${record.meta.target}`)
   console.log(`  ${url}`)

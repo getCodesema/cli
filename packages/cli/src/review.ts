@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { runAgent } from './agent.js'
 import { pickBranch } from './branches.js'
 import { ensureWorkDir, isRepoAgentTrusted, loadConfig, loadRepoConfig, trustRepoAgent } from './config.js'
+import { createFixRunner, DEFAULT_TIMEOUT_S } from './fix.js'
 import { isAncestor, repoRoot } from './git.js'
 import { reviewLanguage, t, uiLocale } from './i18n.js'
 import { notifyDesktop } from './notify.js'
@@ -171,7 +172,6 @@ function balancedEnd(s: string, start: number): number {
   return -1
 }
 
-const DEFAULT_TIMEOUT_S = 900
 const PARTIAL_PARSE_INTERVAL_MS = 400
 
 function createPartialForwarder(session: LiveSession): (text: string) => PartialReview | null {
@@ -277,7 +277,17 @@ export async function review(opts: {
     incremental: Boolean(incremental),
   })
 
-  const { url } = await startServer(session, { port: opts.port ?? config.port, locale: uiLocale() })
+  const timeoutMs = (opts.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_S) * 1000
+  const { url } = await startServer(session, {
+    port: opts.port ?? config.port,
+    locale: uiLocale(),
+    fixRunner: createFixRunner({
+      getRecord: () => session.record(),
+      cwd: input.repo_root,
+      command: agentCommand,
+      timeoutMs,
+    }),
+  })
 
   const headerRows = [
     {
@@ -315,7 +325,7 @@ export async function review(opts: {
       command: agentCommand,
       prompt,
       cwd: input.repo_root,
-      timeoutMs: (opts.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_S) * 1000,
+      timeoutMs,
       onText: (text) => {
         const partial = forwardPartial(text)
         if (!partial) return

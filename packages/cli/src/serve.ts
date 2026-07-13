@@ -1,9 +1,11 @@
+import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ReviewRecord } from './contract.js'
+import type { FixRunner } from './fix.js'
 import { t } from './i18n.js'
 import type { PartialReview } from './partial.js'
 
@@ -178,6 +180,57 @@ function serveEvents(session: LiveSession, req: IncomingMessage, res: ServerResp
   })
 }
 
+const MAX_FIX_BODY_BYTES = 64 * 1024
+
+function readJsonBody(req: IncomingMessage, maxBytes: number): Promise<unknown> {
+  return new Promise((resolveBody, reject) => {
+    let size = 0
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length
+      if (size > maxBytes) {
+        reject(new Error('body too large'))
+        req.destroy()
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => {
+      try {
+        resolveBody(JSON.parse(Buffer.concat(chunks).toString('utf8')))
+      } catch {
+        reject(new Error('invalid json'))
+      }
+    })
+    req.on('error', reject)
+  })
+}
+
+type FixEndpoint = { runner: FixRunner; token: string }
+
+/**
+ * POST /api/fix triggers an agent that EDITS the working tree, so it needs more
+ * than the loopback + Host guards: a per-server random token (injected into the
+ * served page, unreadable cross-origin) blocks blind CSRF posts to 127.0.0.1.
+ */
+async function handleFixStart(req: IncomingMessage, res: ServerResponse, fix: FixEndpoint | undefined): Promise<void> {
+  if (!fix) return sendJson(res, 501, { error: 'fix runner unavailable' })
+  if (req.headers['x-codesema-fix-token'] !== fix.token) return sendText(res, 403, 'forbidden')
+  let body: unknown
+  try {
+    body = await readJsonBody(req, MAX_FIX_BODY_BYTES)
+  } catch {
+    return sendText(res, 400, 'bad request')
+  }
+  const findings = (body as { findings?: unknown } | null)?.findings
+  if (!Array.isArray(findings) || !findings.every((n) => typeof n === 'number')) {
+    return sendText(res, 400, 'bad request')
+  }
+  const started = fix.runner.start(findings)
+  if (!started.ok) return sendJson(res, started.code, { error: started.error })
+  return sendJson(res, 202, { ok: true })
+}
+
 async function serveStaticFile(res: ServerResponse, pathname: string): Promise<void> {
   const filePath = resolveStaticPath(WEB_DIST, pathname)
   if (!filePath) return sendText(res, 404, 'not found')
@@ -192,12 +245,10 @@ async function serveStaticFile(res: ServerResponse, pathname: string): Promise<v
   res.end(content)
 }
 
-function createRequestHandler(session: LiveSession, indexHtml: string) {
+function createRequestHandler(session: LiveSession, indexHtml: string, fix?: FixEndpoint) {
   let sseClients = 0
 
   return (req: IncomingMessage, res: ServerResponse): void => {
-    if (req.method !== 'GET') return sendText(res, 405, 'method not allowed')
-
     // The server only binds to loopback, but a malicious site could still reach
     // 127.0.0.1 via DNS rebinding (a domain that later resolves to loopback) and
     // read the diff/review. Accept only requests whose Host header is loopback, so
@@ -211,6 +262,12 @@ function createRequestHandler(session: LiveSession, indexHtml: string) {
       return sendText(res, 400, 'bad request')
     }
 
+    if (req.method === 'POST') {
+      if (pathname === '/api/fix') return void handleFixStart(req, res, fix)
+      return sendText(res, 405, 'method not allowed')
+    }
+    if (req.method !== 'GET') return sendText(res, 405, 'method not allowed')
+
     if (pathname.startsWith('/api/')) {
       if (pathname === '/api/status') {
         return sendJson(res, 200, { ...session.status(), partial: session.partial() })
@@ -219,6 +276,10 @@ function createRequestHandler(session: LiveSession, indexHtml: string) {
         const record = session.record()
         if (!record) return sendJson(res, 202, session.status())
         return sendJson(res, 200, record)
+      }
+      if (pathname === '/api/fix/status') {
+        if (!fix) return sendJson(res, 200, { available: false })
+        return sendJson(res, 200, fix.runner.status())
       }
       if (pathname === '/api/events') {
         if (sseClients >= MAX_SSE_CLIENTS) return sendText(res, 503, 'too many event streams')
@@ -256,15 +317,24 @@ async function listen(
 
 export async function startServer(
   session: LiveSession,
-  opts: { port?: number; locale?: string },
+  opts: { port?: number; locale?: string; fixRunner?: FixRunner },
 ): Promise<{ url: string; port: number; stop: () => Promise<void> }> {
   if (!existsSync(join(WEB_DIST, 'index.html'))) {
     throw new Error(t('serve.noWebUi', { path: WEB_DIST }))
   }
-  const localeScript = `<script>window.__CODESEMA_LOCALE__=${JSON.stringify(opts.locale ?? 'en')}</script>`
-  const indexHtml = readFileSync(join(WEB_DIST, 'index.html'), 'utf8').replace('</head>', `${localeScript}</head>`)
+  const fix: FixEndpoint | undefined = opts.fixRunner
+    ? { runner: opts.fixRunner, token: randomBytes(16).toString('hex') }
+    : undefined
+  const bootScript = [
+    `window.__CODESEMA_LOCALE__=${JSON.stringify(opts.locale ?? 'en')}`,
+    ...(fix ? [`window.__CODESEMA_FIX_TOKEN__=${JSON.stringify(fix.token)}`] : []),
+  ].join(';')
+  const indexHtml = readFileSync(join(WEB_DIST, 'index.html'), 'utf8').replace(
+    '</head>',
+    `<script>${bootScript}</script></head>`,
+  )
 
-  const { server, port } = await listen(createRequestHandler(session, indexHtml), opts.port ?? 4400)
+  const { server, port } = await listen(createRequestHandler(session, indexHtml, fix), opts.port ?? 4400)
   const stop = () =>
     new Promise<void>((resolveClose) => {
       server.closeAllConnections()

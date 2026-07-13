@@ -76,7 +76,7 @@ type RawResponse = { status: number; contentType: string; nosniff: string; body:
 function rawRequest(
   port: number,
   path: string,
-  opts: { method?: string; headers?: Record<string, string> } = {},
+  opts: { method?: string; headers?: Record<string, string>; body?: string } = {},
 ): Promise<RawResponse> {
   return new Promise((resolveResponse, reject) => {
     const req = request(
@@ -98,6 +98,7 @@ function rawRequest(
       },
     )
     req.on('error', reject)
+    if (opts.body !== undefined) req.write(opts.body)
     req.end()
   })
 }
@@ -165,6 +166,15 @@ describe('startServer', () => {
     expect(res.status).toBe(405)
   })
 
+  test('reports the fix endpoint as unavailable without a runner', async () => {
+    const status = await rawRequest(port, '/api/fix/status')
+    expect(status.status).toBe(200)
+    expect(JSON.parse(status.body)).toEqual({ available: false })
+
+    const start = await rawRequest(port, '/api/fix', { method: 'POST', body: '{"findings":[0]}' })
+    expect(start.status).toBe(501)
+  })
+
   test('rejects any request whose Host is not loopback', async () => {
     expect((await rawRequest(port, '/api/status', { headers: { host: 'evil.com' } })).status).toBe(403)
     expect((await rawRequest(port, '/', { headers: { host: 'evil.com' } })).status).toBe(403)
@@ -201,6 +211,64 @@ describe('startServer', () => {
     expect(after.status).toBe(200)
     const body = JSON.parse(after.body) as { review: { verdict: string } }
     expect(body.review.verdict).toBe('approve')
+  })
+
+  test('secures and routes the fix endpoint when a runner is attached', async () => {
+    const calls: number[][] = []
+    let startResult: { ok: true } | { ok: false; code: number; error: string } = { ok: true }
+    const runner = {
+      status: () => ({ available: true as const, phase: 'idle' as const, selected: [], head_moved: false }),
+      start: (ids: number[]) => {
+        calls.push(ids)
+        return startResult
+      },
+    }
+    const fixSession = createSession()
+    const started = await startServer(fixSession, { port: 4921, fixRunner: runner })
+    try {
+      const html = await rawRequest(started.port, '/')
+      const tokenMatch = /__CODESEMA_FIX_TOKEN__="([a-f0-9]{32})"/.exec(html.body)
+      expect(tokenMatch).not.toBeNull()
+      const token = tokenMatch![1]!
+
+      const status = await rawRequest(started.port, '/api/fix/status')
+      expect(JSON.parse(status.body)).toMatchObject({ available: true, phase: 'idle' })
+
+      const noToken = await rawRequest(started.port, '/api/fix', { method: 'POST', body: '{"findings":[0]}' })
+      expect(noToken.status).toBe(403)
+      const badToken = await rawRequest(started.port, '/api/fix', {
+        method: 'POST',
+        headers: { 'x-codesema-fix-token': 'wrong' },
+        body: '{"findings":[0]}',
+      })
+      expect(badToken.status).toBe(403)
+      expect(calls).toHaveLength(0)
+
+      const badBody = await rawRequest(started.port, '/api/fix', {
+        method: 'POST',
+        headers: { 'x-codesema-fix-token': token },
+        body: '{"findings":["a"]}',
+      })
+      expect(badBody.status).toBe(400)
+
+      const ok = await rawRequest(started.port, '/api/fix', {
+        method: 'POST',
+        headers: { 'x-codesema-fix-token': token },
+        body: '{"findings":[0,2]}',
+      })
+      expect(ok.status).toBe(202)
+      expect(calls).toEqual([[0, 2]])
+
+      startResult = { ok: false, code: 409, error: 'a fix is already running' }
+      const busy = await rawRequest(started.port, '/api/fix', {
+        method: 'POST',
+        headers: { 'x-codesema-fix-token': token },
+        body: '{"findings":[1]}',
+      })
+      expect(busy.status).toBe(409)
+    } finally {
+      await started.stop()
+    }
   })
 
   test('streams session events over SSE', async () => {
