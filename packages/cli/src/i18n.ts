@@ -17,7 +17,7 @@ Usage:
                                       when stdin is not a terminal, e.g. CI). Re-runs on the same
                                       branch update the previous review incrementally; --full
                                       forces a review from scratch
-  codesema config                     Change the language, AI agent, model and effort (interactive)
+  codesema config                     Change the language, AI agent, model, effort and auto-sync (interactive)
   codesema prep [--target <branch>]   Only detect branches, compute the MR diff, write
                                       .codesema/input.json for your own agent flow
   codesema show [--review <file>]     Only display a review (agent output) in the local web UI
@@ -333,7 +333,7 @@ Usage :
                                       aussi quand stdin n'est pas un terminal, ex. CI). Relancer
                                       sur la même branche met à jour la revue précédente de façon
                                       incrémentale ; --full force une revue complète
-  codesema config                     Changer la langue, l'agent IA, le modèle et l'effort (interactif)
+  codesema config                     Changer la langue, l'agent IA, le modèle, l'effort et l'auto-sync (interactif)
   codesema prep [--target <branche>]  Détecte seulement les branches, calcule le diff de la MR,
                                       écrit .codesema/input.json pour votre propre flux d'agent
   codesema show [--review <fichier>]  Affiche seulement une revue (sortie d'agent) dans l'UI web locale
