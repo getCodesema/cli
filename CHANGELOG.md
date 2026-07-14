@@ -3,7 +3,13 @@
 All notable changes to `codesema` (the npm package in `packages/cli`) are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [SemVer](https://semver.org).
 
-## [0.7.0] - unreleased
+## [0.8.0] - unreleased
+
+### Added
+
+- `impact_candidates` in the prep input and the review prompt: when the MR modifies or removes an exported declaration (TypeScript/JavaScript exports, Python top-level `def`/`class`), `codesema prep` lists where that symbol is used elsewhere in the repository (`git grep`, word-matched, capped and deduplicated) and which files import the changed files, so the agent can flag call sites the diff does not update. Zero new dependencies; the block is explicitly labeled as best-effort text matches, and the review instructions require the agent to treat it as leads to verify, never as facts.
+
+## [0.7.0] - 2026-07-13
 
 ### Added
 

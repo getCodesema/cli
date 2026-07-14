@@ -78,4 +78,28 @@ describe('prep', () => {
       run(['checkout', 'feature/x'])
     }
   })
+
+  test('impact_candidates: null when the diff touches no supported source file', () => {
+    const input = prep({ target: 'develop', cwd: repo, quiet: true })
+    expect(input.impact_candidates).toBeNull()
+  })
+
+  test('impact_candidates: filled when a changed export has callers outside the diff', () => {
+    run(['checkout', 'develop'])
+    writeFileSync(join(repo, 'greeting.ts'), 'export function greetUser(name: string): string {\n  return name\n}\n')
+    writeFileSync(join(repo, 'consumer.ts'), "import { greetUser } from './greeting'\nconsole.log(greetUser('a'))\n")
+    run(['add', '-A'])
+    run(['commit', '-m', 'chore: add greeting and consumer'])
+    run(['checkout', '-b', 'feature/impact'])
+    try {
+      commitFile('greeting.ts', 'export function greetUser(name: string, loud: boolean): string {\n  return name\n}\n', 'feat: loud greeting')
+      const input = prep({ target: 'develop', cwd: repo, quiet: true })
+      const symbol = input.impact_candidates?.symbols.find((s) => s.name === 'greetUser')
+      expect(symbol?.change).toBe('modified')
+      expect(symbol?.used_at).toContain('consumer.ts:2')
+      expect(input.impact_candidates?.imported_by['greeting.ts']).toContain('consumer.ts')
+    } finally {
+      run(['checkout', 'feature/x'])
+    }
+  })
 })

@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ensureWorkDir } from './config.js'
 import { currentBranch, git, headSha, mergeBase, refExists, repoRoot, revListCount, tryExec, tryGit } from './git.js'
+import { buildImpactCandidates, type ImpactCandidates } from './impact.js'
 import { t } from './i18n.js'
 import { renderFieldRows, type FieldRow } from './ui.js'
 
@@ -36,6 +37,7 @@ export type PrepInput = {
   commits: string[]
   files: { path: string; additions: number; deletions: number }[]
   custom_instructions: string | null
+  impact_candidates: ImpactCandidates | null
   diff: string
 }
 
@@ -203,6 +205,7 @@ export function prep(opts: { branch?: string; target?: string; cwd: string; quie
     commits,
     files,
     custom_instructions: custom,
+    impact_candidates: buildImpactCandidates(diff, cwd),
     diff,
   }
 
