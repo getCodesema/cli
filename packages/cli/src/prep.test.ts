@@ -78,4 +78,76 @@ describe('prep', () => {
       run(['checkout', 'feature/x'])
     }
   })
+
+  test('truncation counts code points and never splits a surrogate pair', () => {
+    run(['checkout', '-b', 'feature/emoji-subject', 'develop'])
+    try {
+      commitFile('emoji.txt', 'x\n', `feat: ${'🚀'.repeat(200)}`)
+      const input = prep({ target: 'develop', cwd: repo, quiet: true })
+      const subject = input.commits[0] ?? ''
+      expect(subject.endsWith('…')).toBe(true)
+      expect(Array.from(subject)).toHaveLength(120)
+      expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(subject)).toBe(false)
+    } finally {
+      run(['checkout', 'feature/x'])
+    }
+  })
+
+  test('overlong commit subjects are truncated with an ellipsis', () => {
+    run(['checkout', '-b', 'feature/long-subject', 'develop'])
+    try {
+      commitFile('long.txt', 'x\n', `feat: ${'y'.repeat(400)}`)
+      const input = prep({ target: 'develop', cwd: repo, quiet: true })
+      expect(input.commits).toHaveLength(1)
+      expect(input.commits[0]?.length).toBeLessThanOrEqual(120)
+      expect(input.commits[0]?.startsWith('feat: ')).toBe(true)
+      expect(input.commits[0]?.endsWith('…')).toBe(true)
+    } finally {
+      run(['checkout', 'feature/x'])
+    }
+  })
+
+  test('impact_candidates: null when the diff touches no supported source file', () => {
+    const input = prep({ target: 'develop', cwd: repo, quiet: true })
+    expect(input.impact_candidates).toBeNull()
+  })
+
+  test('diff carries 10 context lines around each change', () => {
+    run(['checkout', 'develop'])
+    const lines = Array.from({ length: 30 }, (_, i) => `line${i + 1}`)
+    writeFileSync(join(repo, 'context.txt'), `${lines.join('\n')}\n`)
+    run(['add', '-A'])
+    run(['commit', '-m', 'chore: add context file'])
+    run(['checkout', '-b', 'feature/context'])
+    try {
+      lines[14] = 'line15 changed'
+      writeFileSync(join(repo, 'context.txt'), `${lines.join('\n')}\n`)
+      run(['add', '-A'])
+      run(['commit', '-m', 'feat: change middle line'])
+      const input = prep({ target: 'develop', cwd: repo, quiet: true })
+      expect(input.diff).toContain('line7\n')
+      expect(input.diff).toContain('line23\n')
+    } finally {
+      run(['checkout', 'feature/x'])
+    }
+  })
+
+  test('impact_candidates: filled when a changed export has callers outside the diff', () => {
+    run(['checkout', 'develop'])
+    writeFileSync(join(repo, 'greeting.ts'), 'export function greetUser(name: string): string {\n  return name\n}\n')
+    writeFileSync(join(repo, 'consumer.ts'), "import { greetUser } from './greeting'\nconsole.log(greetUser('a'))\n")
+    run(['add', '-A'])
+    run(['commit', '-m', 'chore: add greeting and consumer'])
+    run(['checkout', '-b', 'feature/impact'])
+    try {
+      commitFile('greeting.ts', 'export function greetUser(name: string, loud: boolean): string {\n  return name\n}\n', 'feat: loud greeting')
+      const input = prep({ target: 'develop', cwd: repo, quiet: true })
+      const symbol = input.impact_candidates?.symbols.find((s) => s.name === 'greetUser')
+      expect(symbol?.change).toBe('modified')
+      expect(symbol?.used_at).toContain('consumer.ts:2')
+      expect(input.impact_candidates?.imported_by['greeting.ts']).toContain('consumer.ts')
+    } finally {
+      run(['checkout', 'feature/x'])
+    }
+  })
 })

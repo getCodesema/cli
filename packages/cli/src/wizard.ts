@@ -25,6 +25,8 @@ export type AgentDef = {
   modelFlag: string
   /** Suggested models (free text entry is always possible). */
   models: string[]
+  /** Mid-tier model used for the dual review judge. */
+  judgeModel: string
   effortFlag?: (value: string) => string
   efforts?: string[]
 }
@@ -40,6 +42,7 @@ export const AGENT_DEFS: AgentDef[] = [
     base: 'claude -p',
     modelFlag: '--model',
     models: ['fable', 'opus', 'sonnet', 'haiku'],
+    judgeModel: 'sonnet',
     effortFlag: (v) => `--effort ${v}`,
     efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
   },
@@ -51,6 +54,7 @@ export const AGENT_DEFS: AgentDef[] = [
     suffix: '-',
     modelFlag: '-m',
     models: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5', 'gpt-5.4-mini'],
+    judgeModel: 'gpt-5.5',
     effortFlag: (v) => `-c model_reasoning_effort=${v}`,
     efforts: ['minimal', 'low', 'medium', 'high', 'xhigh'],
   },
@@ -61,6 +65,7 @@ export const AGENT_DEFS: AgentDef[] = [
     base: 'gemini',
     modelFlag: '-m',
     models: ['gemini-3-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+    judgeModel: 'gemini-2.5-pro',
     // no CLI effort flag: gemini only supports it via settings.json
   },
 ]
@@ -228,7 +233,7 @@ export async function runOnboarding(cwd: string): Promise<string | null> {
   return result.command
 }
 
-export type ConfigEntryId = 'agent' | 'language' | 'back'
+export type ConfigEntryId = 'agent' | 'language' | 'autoSync' | 'back'
 
 export type ConfigEntry = {
   id: ConfigEntryId
@@ -242,11 +247,17 @@ function languageLabel(language?: SupportedLanguage): string {
   return t('config.languageAuto')
 }
 
+function autoSyncLabel(syncAutoPush: boolean | undefined): string {
+  if (syncAutoPush === undefined) return t('config.autoSyncUnset')
+  return syncAutoPush ? t('config.autoSyncOn') : t('config.autoSyncOff')
+}
+
 /** Entries of the `codesema config` submenu, current values shown as hints. */
 export function describeConfigEntries(current: CodesemaConfig): ConfigEntry[] {
   return [
     { id: 'agent', label: t('config.agentEntry'), hint: current.agent ?? t('config.agentEntryUnset') },
     { id: 'language', label: t('config.languageEntry'), hint: languageLabel(current.language) },
+    { id: 'autoSync', label: t('config.autoSyncEntry'), hint: autoSyncLabel(current.syncAutoPush) },
     { id: 'back', label: t('config.back'), hint: '' },
   ]
 }
@@ -283,6 +294,26 @@ export async function configCommand(repoRoot: string | null): Promise<void> {
       const path = saveGlobalConfig({ ...loadGlobalConfig(), language })
       console.log('')
       console.log(`  ${t('config.languageSaved', { path })}`)
+      console.log('')
+      continue
+    }
+
+    if (picked === 'autoSync') {
+      const choice = await select<'on' | 'off'>({
+        title: t('config.autoSyncQuestion'),
+        options: [
+          { label: t('sync.autoPushDecline'), hint: '', value: 'off' },
+          { label: t('sync.autoPushAccept'), hint: t('sync.autoPushAcceptHint'), value: 'on' },
+        ],
+        initialIndex: current.syncAutoPush === true ? 1 : 0,
+        summary: false,
+      })
+      if (choice === null) continue
+      // Auto-sync is global-only, like the sync credentials it depends on: a
+      // repo config must never be able to turn on pushing diffs off the machine.
+      const path = saveGlobalConfig({ ...loadGlobalConfig(), syncAutoPush: choice === 'on' })
+      console.log('')
+      console.log(`  ${t('config.autoSyncSaved', { state: autoSyncLabel(choice === 'on'), path })}`)
       console.log('')
       continue
     }

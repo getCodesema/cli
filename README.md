@@ -28,6 +28,12 @@ That is the whole flow:
 
 Re-running on the same branch reviews **incrementally**: the agent gets the previous review plus the diff since it, and updates it (pass `--full` to review from scratch).
 
+## Dual review
+
+`codesema review --dual` (or "Dual review" in the menu) runs the review twice in parallel with the agent you already use, under two different angles: the **reviewer** reads the MR for the big picture and writes the guided narrative, while the **prosecutor** hunts for what breaks — bugs, regressions, security, edge cases — and reports findings only. A **judge** on the same provider's mid-tier model then adjudicates every finding: kept, merged as a duplicate, or rejected with a one-line reason. Security findings can never be rejected.
+
+The live UI shows both phases: the two reviewers face to face with a per-file consensus map (files both lanes flag light up as hot zones), then the deliberation where each decision resolves in real time. In the final review, findings raised by both reviewers carry a **consensus** badge — the strongest signal a finding deserves your attention. Cost: roughly two reviews plus one cheap judge pass; the display itself consumes zero extra tokens.
+
 ## How it works
 
 ```
@@ -45,9 +51,11 @@ Re-running on the same branch reviews **incrementally**: the agent gets the prev
 
 Everything runs on your machine. The MR diff, the prompt and the review are written under `.codesema/` and never leave your computer: the review itself is produced by the agent CLI you run locally, not by a codesema.com service.
 
-The one exception is `codesema sync`. That command, and only that command, uploads the review record (**including the diff**) to a codesema.com workspace, and only after you confirm on first run. Your absolute local repo path is stripped from the payload; only the review, diff, commit subjects and the origin remote URL are sent. `codesema sync delete` erases everything.
+The one exception is `codesema sync`. That command uploads the review record (**including the diff**) to a codesema.com workspace, and only after you confirm on first run. After a successful sync it offers, once, to also push every future completed review automatically; nothing is pushed automatically unless you accept, and the `codesema config` menu turns it on or off anytime. Your absolute local repo path is stripped from the payload; only the review, diff, commit subjects and the origin remote URL are sent. `codesema sync delete` erases everything.
 
 Before uploading, sync scans the diff for anything that looks like a committed secret (dotenv files, private keys, and AWS/GitHub/Slack/Google/Stripe/OpenAI/Anthropic credentials) and refuses to send it. Fix the diff, or pass `--force` once you have checked.
+
+The review subprocess is locked down. The prompt already contains everything the agent needs (branch names, commit subjects, changed files, the diff), so `codesema review` runs the known agent CLIs with their tools switched off: `claude` gets `--tools "" --strict-mcp-config --setting-sources user` (no tools, no MCP servers, the repo's own `.claude/` settings ignored) and `codex` gets `--sandbox read-only --ask-for-approval never` with `AGENTS.md` loading disabled. Known agents also receive a minimal environment — `PATH`, `HOME`, locale, proxy settings and the provider's own variables — so your other credentials and tokens never reach the subprocess. Flags you set yourself and custom agent commands are left untouched, and "Run fixes" intentionally keeps the edit tools it needs.
 
 ## Requirements
 
@@ -95,7 +103,7 @@ codesema sync delete           # erase all synced data and local credentials
 codesema link <code>           # attach the workspace to a codesema.com account via a pairing code
 ```
 
-Sync is opt-in and free; your review record (including the diff) is only sent when you run `codesema sync`. Workspace credentials are stored in the global config file (`~/.config/codesema/config.json`), written with owner-only permissions (`0600`); sync settings in a repo's `.codesema/config.json` are ignored.
+Sync is opt-in and free; your review record (including the diff) is only sent when you run `codesema sync`, or automatically after a review if you enabled auto-sync (offered after the first sync, toggleable in `codesema config`). Workspace credentials are stored in the global config file (`~/.config/codesema/config.json`), written with owner-only permissions (`0600`); sync settings in a repo's `.codesema/config.json` are ignored.
 
 `codesema --help` lists every flag.
 
