@@ -146,6 +146,7 @@ describe('reviewInstructions', () => {
     expect(p).toContain('"verdict", "summary", "findings", "narrative", "files_reviewed"')
     expect(p).toContain('settle EVERY file explicitly')
     expect(p).toContain('"status": "clean" | "findings"')
+    expect(p).toContain('REFUTE every finding')
   })
 })
 

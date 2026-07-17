@@ -349,7 +349,7 @@ Rules:
 - When the input has a non-null impact_candidates, check the used_at entries of every modified or removed symbol: a usage the diff does not update is a prime target; report it when the change breaks it. These are leads, never facts.
 - If the input has non-null custom_instructions, apply them on top of these rules; they win on conflicts.
 - Report problems only: no praise, no pedagogy, no style nits. If it does not break, corrupt, leak or regress something, do not report it.
-- Before emitting the JSON, re-check every finding (file present in the diff, line inside a hunk, failure scenario named) and delete any finding that fails; then fill "files_reviewed" with one { "path", "status" } entry per files[] path you examined: "findings" when you kept at least one finding on it, "clean" when you consciously cleared it. Any file in neither is reported to the human as not reviewed.
+- Before emitting the JSON, actively try to REFUTE every finding: its file is present in the diff, its line sits inside a hunk, its failure scenario is named, and the diff really produces the claimed outcome. Delete any finding you cannot defend; then fill "files_reviewed" with one { "path", "status" } entry per files[] path you examined: "findings" when you kept at least one finding on it, "clean" when you consciously cleared it. Any file in neither is reported to the human as not reviewed. Report boldly during the sweep, refute hard here: that split is what keeps recall high and false positives at zero.
 - Language: ${languageRule}. Keep code identifiers and file paths verbatim.
 
 Output JSON shape (exactly these fields, NO narrative):
