@@ -144,6 +144,8 @@ describe('reviewInstructions', () => {
     expect(p).toContain('critical = data loss')
     expect(p).toContain('omit "line" rather than guessing')
     expect(p).toContain('"verdict", "summary", "findings", "narrative", "files_reviewed"')
+    expect(p).toContain('settle EVERY file explicitly')
+    expect(p).toContain('"status": "clean" | "findings"')
   })
 })
 
@@ -155,11 +157,16 @@ describe('missingReviewedFiles', () => {
   })
 
   test('empty when every diff file was examined', () => {
-    expect(missingReviewedFiles(files, ['a.ts', 'b.ts', 'extra.ts'])).toEqual([])
+    const reviewed = [
+      { path: 'a.ts', status: 'clean' as const },
+      { path: 'b.ts', status: 'findings' as const },
+      { path: 'extra.ts', status: 'clean' as const },
+    ]
+    expect(missingReviewedFiles(files, reviewed)).toEqual([])
   })
 
   test('lists diff files the reviewer skipped', () => {
-    expect(missingReviewedFiles(files, ['a.ts'])).toEqual(['b.ts'])
+    expect(missingReviewedFiles(files, [{ path: 'a.ts', status: 'clean' }])).toEqual(['b.ts'])
   })
 })
 
