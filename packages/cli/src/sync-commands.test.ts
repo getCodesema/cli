@@ -289,7 +289,9 @@ describe('sync and link commands', () => {
   test('syncCommand pushes the archived review to the stub server', async () => {
     seedCredentials()
 
-    await syncCommand({ cwd: repoDir })
+    await withoutTTY(async () => {
+      await syncCommand({ cwd: repoDir })
+    })
 
     const pushed = stub.requests.find((r) => r.method === 'POST' && r.path === '/api/cli/reviews')
     expect(pushed).toBeDefined()
@@ -313,8 +315,10 @@ describe('sync and link commands', () => {
     }
 
     try {
-      await syncCommand({ cwd: repoDir })
-      await expect(syncCommand({ cwd: repoDir })).resolves.toBeUndefined()
+      await withoutTTY(async () => {
+        await syncCommand({ cwd: repoDir })
+        await expect(syncCommand({ cwd: repoDir })).resolves.toBeUndefined()
+      })
     } finally {
       console.log = originalLog
     }
@@ -343,13 +347,15 @@ describe('sync and link commands', () => {
     }
 
     try {
-      await syncCommand({ cwd: repoDir })
+      await withoutTTY(async () => {
+        await syncCommand({ cwd: repoDir })
 
-      const archived = JSON.parse(readFileSync(archivePath, 'utf8')) as ReviewRecord
-      archived.meta.created_at = '2026-07-13T11:30:00.000Z'
-      writeFileSync(archivePath, JSON.stringify(archived, null, 2))
+        const archived = JSON.parse(readFileSync(archivePath, 'utf8')) as ReviewRecord
+        archived.meta.created_at = '2026-07-13T11:30:00.000Z'
+        writeFileSync(archivePath, JSON.stringify(archived, null, 2))
 
-      await syncCommand({ cwd: repoDir })
+        await syncCommand({ cwd: repoDir })
+      })
     } finally {
       console.log = originalLog
     }
@@ -481,7 +487,9 @@ describe('sync and link commands', () => {
     seedCredentials()
     setArchivedDiff(repoDir, SECRET_DIFF)
 
-    await syncCommand({ cwd: repoDir, force: true })
+    await withoutTTY(async () => {
+      await syncCommand({ cwd: repoDir, force: true })
+    })
 
     const pushed = stub.requests.find((r) => r.method === 'POST' && r.path === '/api/cli/reviews')
     expect(pushed).toBeDefined()
