@@ -1,6 +1,14 @@
 import { execFileSync } from 'node:child_process'
 import { t } from './i18n.js'
 
+// GIT_DIR/GIT_WORK_TREE/etc. inherited from an enclosing process (a git hook
+// invoking this CLI, or an editor's git integration) would silently redirect
+// every call below away from `cwd` and onto whatever repo set them. `cwd` is
+// the only intended source of truth here, so those variables never propagate.
+function subprocessEnv(): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
+}
+
 export function git(args: string[], cwd: string): string {
   try {
     // stderr captured, not inherited: failing probes don't pollute the output
@@ -9,6 +17,7 @@ export function git(args: string[], cwd: string): string {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: subprocessEnv(),
     }).trimEnd()
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -29,7 +38,13 @@ export function tryGit(args: string[], cwd: string): string | null {
 /** Optional external command (gh, glab): null if missing, failing, or too slow. */
 export function tryExec(cmd: string, args: string[], cwd: string): string | null {
   try {
-    return execFileSync(cmd, args, { cwd, encoding: 'utf8', timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return execFileSync(cmd, args, {
+      cwd,
+      encoding: 'utf8',
+      timeout: 8000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      env: subprocessEnv(),
+    }).trim()
   } catch {
     return null
   }
@@ -61,7 +76,9 @@ export function isAncestor(a: string, b: string, cwd: string): boolean {
 
 export function revListCount(range: string, cwd: string): number | null {
   const out = tryGit(['rev-list', '--count', range], cwd)
-  if (out === null) {return null}
+  if (out === null) {
+    return null
+  }
   const n = Number(out)
   return Number.isFinite(n) ? n : null
 }

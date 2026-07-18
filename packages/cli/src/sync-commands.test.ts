@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -6,8 +5,9 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ReviewRecord } from './contract.js'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { loadGlobalConfig, saveGlobalConfig } from './config.js'
+import type { ReviewRecord } from './contract.js'
 import { t } from './i18n.js'
 import { linkCommand, syncCommand } from './sync.js'
 
@@ -131,7 +131,8 @@ function startStubServer(): Promise<StubServer> {
           sendJson(res, 401, { error: 'unauthorized' })
           return
         }
-        const status = linkRequestStatuses.length > 1 ? linkRequestStatuses.shift() : linkRequestStatuses[0]
+        const status =
+          linkRequestStatuses.length > 1 ? linkRequestStatuses.shift() : linkRequestStatuses[0]
         sendJson(res, 200, { status })
         return
       }
@@ -176,8 +177,15 @@ function startStubServer(): Promise<StubServer> {
   })
 }
 
+// Strips GIT_DIR/GIT_WORK_TREE/etc.: git hooks (this repo's own lefthook pre-push)
+// set these on their own environment, and they'd redirect these fixture repos'
+// git calls to the outer repo instead of the freshly created one.
+function gitEnv(): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
+}
+
 function runGit(args: string[], cwd: string): void {
-  execFileSync('git', args, { cwd, stdio: 'ignore' })
+  execFileSync('git', args, { cwd, stdio: 'ignore', env: gitEnv() })
 }
 
 async function withoutTTY(run: () => Promise<void>): Promise<void> {
@@ -236,7 +244,8 @@ function setArchivedDiff(repoDir: string, diff: string): void {
   writeFileSync(archivePath, JSON.stringify(archived, null, 2))
 }
 
-const SECRET_DIFF = 'diff --git a/.env b/.env\n--- a/.env\n+++ b/.env\n@@ -0,0 +1 @@\n+AWS_SECRET=1\n'
+const SECRET_DIFF =
+  'diff --git a/.env b/.env\n--- a/.env\n+++ b/.env\n@@ -0,0 +1 @@\n+AWS_SECRET=1\n'
 
 describe('sync and link commands', () => {
   const previousConfigDir = process.env.CODESEMA_CONFIG_DIR
@@ -255,16 +264,26 @@ describe('sync and link commands', () => {
 
   afterEach(async () => {
     await stub.close()
-    if (previousConfigDir === undefined) {delete process.env.CODESEMA_CONFIG_DIR}
-    else {process.env.CODESEMA_CONFIG_DIR = previousConfigDir}
-    if (previousSyncUrl === undefined) {delete process.env.CODESEMA_SYNC_URL}
-    else {process.env.CODESEMA_SYNC_URL = previousSyncUrl}
+    if (previousConfigDir === undefined) {
+      delete process.env.CODESEMA_CONFIG_DIR
+    } else {
+      process.env.CODESEMA_CONFIG_DIR = previousConfigDir
+    }
+    if (previousSyncUrl === undefined) {
+      delete process.env.CODESEMA_SYNC_URL
+    } else {
+      process.env.CODESEMA_SYNC_URL = previousSyncUrl
+    }
     rmSync(configDir, { recursive: true, force: true })
     rmSync(repoDir, { recursive: true, force: true })
   })
 
   function seedCredentials(): void {
-    saveGlobalConfig({ ...loadGlobalConfig(), syncWorkspaceId: 'ws-seed-1', syncSecret: 'secret-seed-1' })
+    saveGlobalConfig({
+      ...loadGlobalConfig(),
+      syncWorkspaceId: 'ws-seed-1',
+      syncSecret: 'secret-seed-1',
+    })
   }
 
   test('syncCommand pushes the archived review to the stub server', async () => {
@@ -302,10 +321,16 @@ describe('sync and link commands', () => {
 
     const pushes = stub.requests.filter((r) => r.method === 'POST' && r.path === '/api/cli/reviews')
     expect(pushes.length).toBe(2)
-    const firstBody = pushes[0]!.body as { record: { meta: { branch: string; head_sha?: string; created_at: string } } }
-    const secondBody = pushes[1]!.body as { record: { meta: { branch: string; head_sha?: string; created_at: string } } }
+    const firstBody = pushes[0]!.body as {
+      record: { meta: { branch: string; head_sha?: string; created_at: string } }
+    }
+    const secondBody = pushes[1]!.body as {
+      record: { meta: { branch: string; head_sha?: string; created_at: string } }
+    }
     expect(secondBody.record.meta).toEqual(firstBody.record.meta)
-    expect(logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' })))).toBe(true)
+    expect(
+      logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' }))),
+    ).toBe(true)
   })
 
   test('a re-push of the same review with a different created_at is reported as deduplicated', async () => {
@@ -334,7 +359,9 @@ describe('sync and link commands', () => {
     const firstBody = pushes[0]!.body as { record: { meta: { created_at: string } } }
     const secondBody = pushes[1]!.body as { record: { meta: { created_at: string } } }
     expect(secondBody.record.meta.created_at).not.toBe(firstBody.record.meta.created_at)
-    expect(logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' })))).toBe(true)
+    expect(
+      logged.some((line) => line.includes(t('sync.alreadySynced', { branch: 'feat/x' }))),
+    ).toBe(true)
   })
 
   test('syncCommand without credentials and without a TTY throws the non-interactive setup error', async () => {
@@ -377,7 +404,9 @@ describe('sync and link commands', () => {
   test('linkCommand surfaces the server error message for a wrong code', async () => {
     seedCredentials()
 
-    await expect(linkCommand({ code: 'WRONGCODE' })).rejects.toThrow('invalid or expired pairing code')
+    await expect(linkCommand({ code: 'WRONGCODE' })).rejects.toThrow(
+      'invalid or expired pairing code',
+    )
   })
 
   test('linkCommand without a code opens the browser page and polls until confirmed', async () => {
@@ -387,7 +416,9 @@ describe('sync and link commands', () => {
     await linkCommand({ openUrl: (url) => opened.push(url), pollIntervalMs: 5 })
 
     expect(opened).toEqual([`http://dashboard.stub.local/link-cli?code=${LINK_REQUEST_CODE}`])
-    const created = stub.requests.find((r) => r.method === 'POST' && r.path === '/api/cli/link-requests')
+    const created = stub.requests.find(
+      (r) => r.method === 'POST' && r.path === '/api/cli/link-requests',
+    )
     expect(created).toBeDefined()
     expect(created!.headers.authorization).toBe('Bearer csk_ws-seed-1.secret-seed-1')
     const polls = stub.requests.filter(
@@ -401,12 +432,16 @@ describe('sync and link commands', () => {
     stub.linkRequestStatuses.length = 0
     stub.linkRequestStatuses.push('pending', 'expired')
 
-    await expect(linkCommand({ openUrl: () => {}, pollIntervalMs: 5 })).rejects.toThrow(t('sync.linkExpired'))
+    await expect(linkCommand({ openUrl: () => {}, pollIntervalMs: 5 })).rejects.toThrow(
+      t('sync.linkExpired'),
+    )
   })
 
   test('linkCommand without a code and without credentials refuses outside a TTY', async () => {
     await withoutTTY(async () => {
-      await expect(linkCommand({ openUrl: () => {} })).rejects.toThrow(t('sync.nonInteractiveSetup'))
+      await expect(linkCommand({ openUrl: () => {} })).rejects.toThrow(
+        t('sync.nonInteractiveSetup'),
+      )
     })
     expect(stub.requests.find((r) => r.path === '/api/cli/link-requests')).toBeUndefined()
   })
@@ -416,7 +451,9 @@ describe('sync and link commands', () => {
 
     await withoutTTY(() => syncCommand({ action: 'delete', cwd: repoDir }))
 
-    const deleted = stub.requests.find((r) => r.method === 'DELETE' && r.path === '/api/cli/workspaces')
+    const deleted = stub.requests.find(
+      (r) => r.method === 'DELETE' && r.path === '/api/cli/workspaces',
+    )
     expect(deleted).toBeDefined()
     expect(deleted!.headers.authorization).toBe('Bearer csk_ws-seed-1.secret-seed-1')
     const config = loadGlobalConfig()
