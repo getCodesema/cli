@@ -359,7 +359,7 @@ async function listen(
 
 export async function startServer(
   session: LiveSession,
-  opts: { port?: number; locale?: string; fixRunner?: FixRunner },
+  opts: { port?: number | undefined; locale?: string | undefined; fixRunner?: FixRunner | undefined },
 ): Promise<{ url: string; port: number; stop: () => Promise<void> }> {
   if (!existsSync(join(WEB_DIST, 'index.html'))) {
     throw new Error(t('serve.noWebUi', { path: WEB_DIST }))

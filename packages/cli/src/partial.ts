@@ -8,9 +8,9 @@ export type PartialFinding = {
 }
 
 export type PartialReview = {
-  verdict?: 'approve' | 'request_changes' | 'comment'
-  summary?: string
-  intent?: string
+  verdict?: 'approve' | 'request_changes' | 'comment' | undefined
+  summary?: string | undefined
+  intent?: string | undefined
   findings: PartialFinding[]
   stepTitles: string[]
 }

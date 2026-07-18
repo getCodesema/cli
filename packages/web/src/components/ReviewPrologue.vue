@@ -17,11 +17,11 @@ const props = defineProps<{
     why?: string
     what?: string
     key_changes?: KeyChange[]
-  } | null
+  } | null | undefined
   reviewFirst?: ReviewFirstItem[] | null
   // v1 fallback
-  intent?: string | null
-  confidence?: string | null
+  intent?: string | null | undefined
+  confidence?: string | null | undefined
   summary?: string | null
 }>()
 

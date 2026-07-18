@@ -285,7 +285,11 @@ async function confirmSyncDelete(): Promise<boolean> {
   return choice === 'delete'
 }
 
-export async function syncCommand(opts: { action?: string; cwd: string; force?: boolean }): Promise<void> {
+export async function syncCommand(opts: {
+  action?: string | undefined
+  cwd: string
+  force?: boolean | undefined
+}): Promise<void> {
   if (opts.action === 'delete') {
     const creds = loadSyncCredentials()
     if (!creds) {throw new Error(t('sync.noCredentials'))}
@@ -322,7 +326,7 @@ export async function syncCommand(opts: { action?: string; cwd: string; force?: 
 }
 
 export async function linkCommand(opts: {
-  code?: string
+  code?: string | undefined
   fetchImpl?: typeof fetch
   openUrl?: (url: string) => void
   pollIntervalMs?: number

@@ -116,7 +116,7 @@ export type ResolvedRecord = {
   sourcePath: string
 }
 
-export function resolveRecord(opts: { review?: string; cwd: string }): ResolvedRecord {
+export function resolveRecord(opts: { review?: string | undefined; cwd: string }): ResolvedRecord {
   const dir = join(opts.cwd, '.codesema')
   const freshPath = opts.review ?? join(dir, 'review.json')
   if (existsSync(freshPath)) {

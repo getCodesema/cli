@@ -13,7 +13,7 @@ const props = defineProps<{
    *  budget when each DiffView gets a single file and can't see the page-wide total. */
   initialCollapsed?: boolean
   /** Scroll to (and flash) the note with this finding id; nonce retriggers the same id. */
-  reveal?: { id: number; nonce: number } | null
+  reveal?: { id: number; nonce: number } | null | undefined
 }>()
 
 const isClient = typeof window !== 'undefined'

@@ -501,14 +501,14 @@ async function ensureRepoAgentTrusted(cwd: string, command: string): Promise<boo
 }
 
 export async function review(opts: {
-  branch?: string
-  target?: string
-  agent?: string
-  port?: number
-  timeout?: number
-  full?: boolean
-  dual?: boolean
-  failOn?: ReviewGate
+  branch?: string | undefined
+  target?: string | undefined
+  agent?: string | undefined
+  port?: number | undefined
+  timeout?: number | undefined
+  full?: boolean | undefined
+  dual?: boolean | undefined
+  failOn?: ReviewGate | undefined
   open: boolean
   interactive?: boolean
   cwd: string

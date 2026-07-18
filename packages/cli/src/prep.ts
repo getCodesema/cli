@@ -145,7 +145,12 @@ export function mrDiff(range: string, cwd: string, excludes = excludePathspecs(c
   return git(['-c', 'core.quotePath=false', 'diff', '--no-color', '-U10', range, '--', '.', ...excludes], cwd)
 }
 
-export function prep(opts: { branch?: string; target?: string; cwd: string; quiet?: boolean }): PrepInput {
+export function prep(opts: {
+  branch?: string | undefined
+  target?: string | undefined
+  cwd: string
+  quiet?: boolean | undefined
+}): PrepInput {
   const cwd = repoRoot(opts.cwd)
   const checkedOut = currentBranch(cwd)
   const branch = opts.branch ?? checkedOut

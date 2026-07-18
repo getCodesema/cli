@@ -82,8 +82,8 @@ export function defaultCommand(def: AgentDef): string {
 export type WizardResult = {
   command: string
   agentId: string
-  model?: string
-  effort?: string
+  model?: string | undefined
+  effort?: string | undefined
 }
 
 export function composeCommand(def: AgentDef, model?: string, effort?: string): string {

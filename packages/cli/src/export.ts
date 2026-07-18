@@ -91,7 +91,7 @@ export function renderMarkdown(record: ReviewRecord): string {
   return `${out.join('\n\n')}\n`
 }
 
-export function exportCommand(opts: { review?: string; out?: string; cwd: string }): void {
+export function exportCommand(opts: { review?: string | undefined; out?: string | undefined; cwd: string }): void {
   const cwd = repoRoot(opts.cwd)
   const { record, sourcePath } = resolveRecord({ review: opts.review, cwd })
   const markdown = renderMarkdown(record)

@@ -6,7 +6,7 @@ import { ACCENT, dim, isFancy, paint } from './ui.js'
 export type SelectOption<T> = {
   label: string
   value: T
-  hint?: string
+  hint?: string | undefined
   /** Render a blank line above this option (visually detaches back/quit entries). */
   separatorBefore?: boolean
 }

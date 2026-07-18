@@ -26,7 +26,7 @@ export type HunkLine = {
   o: number | null
   n: number | null
   c: string
-  note?: Finding
+  note?: Finding | undefined
 }
 
 export type HunkGap = { gap: number }

@@ -211,7 +211,7 @@ export type AgentRunOptions = {
   cwd: string
   timeoutMs: number
   /** Environment for the subprocess; undefined inherits the full process env. */
-  env?: NodeJS.ProcessEnv
+  env?: NodeJS.ProcessEnv | undefined
   /** Cumulative review text so far, called on every update from the agent. */
   onText?: (text: string) => void
 }

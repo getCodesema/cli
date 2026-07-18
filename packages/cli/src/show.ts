@@ -9,7 +9,12 @@ import { printUpdateNotice } from './ui.js'
 import { startUpdateCheck } from './version.js'
 import { defaultCommand, detectAgents } from './wizard.js'
 
-export async function show(opts: { review?: string; port?: number; open: boolean; cwd: string }): Promise<void> {
+export async function show(opts: {
+  review?: string | undefined
+  port?: number | undefined
+  open: boolean
+  cwd: string
+}): Promise<void> {
   const latestVersion = startUpdateCheck()
   const cwd = repoRoot(opts.cwd)
 

@@ -5,22 +5,22 @@ import { isSupportedLanguage, type SupportedLanguage } from './i18n.js'
 
 export type CodesemaConfig = {
   /** Full headless agent shell command (e.g. "claude -p --model opus"). */
-  agent?: string
+  agent?: string | undefined
   /** Wizard metadata, used to re-edit without starting over. */
-  agentId?: string
-  model?: string
-  effort?: string
-  target?: string
-  port?: number
-  timeout?: number
+  agentId?: string | undefined
+  model?: string | undefined
+  effort?: string | undefined
+  target?: string | undefined
+  port?: number | undefined
+  timeout?: number | undefined
   /** UI and review language (ISO 639-1). */
-  language?: SupportedLanguage
+  language?: SupportedLanguage | undefined
   /** Cloud sync (codesema.com): base URL override and workspace credentials. */
-  syncUrl?: string
-  syncWorkspaceId?: string
-  syncSecret?: string
+  syncUrl?: string | undefined
+  syncWorkspaceId?: string | undefined
+  syncSecret?: string | undefined
   /** Explicit opt-in for pushing every completed review; credentials alone never auto-push. */
-  syncAutoPush?: boolean
+  syncAutoPush?: boolean | undefined
 }
 
 type ConfigScope = 'global' | 'repo'
