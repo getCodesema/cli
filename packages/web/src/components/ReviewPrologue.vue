@@ -13,11 +13,14 @@ type ReviewFirstItem = {
 
 const props = defineProps<{
   // v2 prologue fields
-  prologue?: {
-    why?: string
-    what?: string
-    key_changes?: KeyChange[]
-  } | null | undefined
+  prologue?:
+    | {
+        why?: string
+        what?: string
+        key_changes?: KeyChange[]
+      }
+    | null
+    | undefined
   reviewFirst?: ReviewFirstItem[] | null
   // v1 fallback
   intent?: string | null | undefined
@@ -36,13 +39,15 @@ function riskDotColor(risk: string): string {
   return RISK_DOT[risk] ?? RISK_DOT_DEFAULT
 }
 
-const hasPrologue = computed(() =>
-  !!(props.prologue?.why || props.prologue?.what || props.prologue?.key_changes?.length),
+const hasPrologue = computed(
+  () => !!(props.prologue?.why || props.prologue?.what || props.prologue?.key_changes?.length),
 )
 
 // Minimal markdown rendering (code spans, HTML-escaped) with no external dependency.
 function renderInline(text: string): string {
-  if (!text) {return ''}
+  if (!text) {
+    return ''
+  }
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -53,9 +58,7 @@ function renderInline(text: string): string {
 
 <template>
   <div class="prologue-root">
-
     <template v-if="hasPrologue">
-
       <section v-if="prologue?.why" class="prologue-block">
         <div class="prologue-block-tag">{{ $t('reviews.prologue.why') }}</div>
         <!-- eslint-disable-next-line vue/no-v-html -->
@@ -83,15 +86,8 @@ function renderInline(text: string): string {
       <section v-if="reviewFirst?.length" class="prologue-block">
         <div class="prologue-block-tag">{{ $t('reviews.prologue.reviewFirst') }}</div>
         <div class="prologue-focus">
-          <div
-            v-for="(item, i) in reviewFirst"
-            :key="i"
-            class="prologue-focus-row"
-          >
-            <span
-              class="prologue-focus-dot"
-              :style="{ background: riskDotColor(item.risk) }"
-            />
+          <div v-for="(item, i) in reviewFirst" :key="i" class="prologue-focus-row">
+            <span class="prologue-focus-dot" :style="{ background: riskDotColor(item.risk) }" />
             <div class="prologue-focus-content">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span class="prologue-focus-title" v-html="renderInline(item.point)" />
@@ -99,11 +95,9 @@ function renderInline(text: string): string {
           </div>
         </div>
       </section>
-
     </template>
 
     <template v-else>
-
       <section v-if="intent" class="prologue-block">
         <div class="prologue-block-tag">{{ $t('reviews.intent') }}</div>
         <p class="prologue-block-body prologue-block-body--preformatted">{{ intent }}</p>
@@ -135,9 +129,7 @@ function renderInline(text: string): string {
       <p v-if="!intent && !summary" class="prologue-empty codesema-muted">
         {{ $t('reviews.prologue.empty') }}
       </p>
-
     </template>
-
   </div>
 </template>
 
@@ -203,7 +195,7 @@ function renderInline(text: string): string {
 }
 
 .prologue-key-item::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 7px;

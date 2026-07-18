@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import type { PartialReview } from './partial.js'
-import { VERSION, isNewerVersion } from './version.js'
+import { isNewerVersion, VERSION } from './version.js'
 
 export const OCEAN = [24, 30, 36, 37, 43, 44, 50] as const
 
@@ -69,7 +69,9 @@ function oceanColor(index: number): number {
 }
 
 export function printBanner(): void {
-  if (!isFancy()) {return}
+  if (!isFancy()) {
+    return
+  }
   console.log('')
   if ((process.stdout.columns ?? 80) < (BANNER[0] ?? '').length + 4) {
     console.log(`  ${paint('◆', ACCENT)} ${bold('codesema')} ${dim(`v${VERSION}`)}`)
@@ -84,8 +86,12 @@ export function printBanner(): void {
 }
 
 export function printUpdateNotice(latest: string | null): void {
-  if (!latest || !isNewerVersion(VERSION, latest)) {return}
-  console.log(`  ${paint(t('ui.updateAvailable', { current: VERSION, latest }), AMBER)} ${dim('npm i -g codesema@latest')}`)
+  if (!latest || !isNewerVersion(VERSION, latest)) {
+    return
+  }
+  console.log(
+    `  ${paint(t('ui.updateAvailable', { current: VERSION, latest }), AMBER)} ${dim('npm i -g codesema@latest')}`,
+  )
 }
 
 const WAVE_CHARS = '▁▂▃▄▅▆▇█'
@@ -115,7 +121,9 @@ export function progressLabel(partial: PartialReview): string | null {
   if (partial.findings.length > 0) {
     return t('ui.progressFindings', { n: partial.findings.length })
   }
-  if (partial.verdict) {return t('ui.progressVerdict', { verdict: partial.verdict })}
+  if (partial.verdict) {
+    return t('ui.progressVerdict', { verdict: partial.verdict })
+  }
   return null
 }
 
@@ -164,7 +172,8 @@ export function startSpinner(label: string): Spinner {
       wave += paint(WAVE_CHARS.charAt(h), color)
     }
     const secs = Math.floor((Date.now() - startedAt) / 1000)
-    const status = liveStatus ?? t(PHASE_KEYS[Math.floor(secs / 7) % PHASE_KEYS.length] ?? PHASE_KEYS[0])
+    const status =
+      liveStatus ?? t(PHASE_KEYS[Math.floor(secs / 7) % PHASE_KEYS.length] ?? PHASE_KEYS[0])
     process.stdout.write(`\r\x1b[2K  ${wave}  ${label} ${dim(`${elapsed(startedAt)} · ${status}`)}`)
   }
 

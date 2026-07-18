@@ -71,9 +71,9 @@ npx -y codesema config
 
 Interactive: language → agent → model → effort, then where to save. Two levels, field by field:
 
-| Level  | File                             | When                                   |
-| ------ | -------------------------------- | -------------------------------------- |
-| Global | `~/.config/codesema/config.json` | Your default, every repo (onboarding)  |
+| Level  | File                             | When                                    |
+| ------ | -------------------------------- | --------------------------------------- |
+| Global | `~/.config/codesema/config.json` | Your default, every repo (onboarding)   |
 | Repo   | `.codesema/config.json`          | Team/project override, wins over global |
 
 CLI flags always win over both. `target`, `port`, `timeout` and `language` can also be set in either file.
@@ -134,32 +134,32 @@ Then, in any repo, on your feature branch, ask your agent: `/codesema`. It uses 
 
 ## Environment variables
 
-| Variable                   | Effect                                                                            |
-| -------------------------- | --------------------------------------------------------------------------------- |
-| `CODESEMA_CONFIG_DIR`      | Override the global config directory (default `~/.config/codesema`).               |
-| `CODESEMA_NO_UPDATE_CHECK` | Set to `1` to skip the startup npm version check (also skipped when not a TTY).    |
-| `CODESEMA_SYNC_URL`        | Point `sync`/`link` at a different codesema.com host (self-hosted or staging).     |
+| Variable                   | Effect                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `CODESEMA_CONFIG_DIR`      | Override the global config directory (default `~/.config/codesema`).            |
+| `CODESEMA_NO_UPDATE_CHECK` | Set to `1` to skip the startup npm version check (also skipped when not a TTY). |
+| `CODESEMA_SYNC_URL`        | Point `sync`/`link` at a different codesema.com host (self-hosted or staging).  |
 
 ## Files
 
-| Path                              | Contents                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `~/.config/codesema/config.json`  | Global config (language, agent, model, effort, sync credentials), mode `0600`. |
-| `.codesema/config.json`           | Repo config, overrides the global one.                                       |
-| `.codesema/input.json`            | The prepared MR diff handed to the agent (`prep`).                           |
-| `.codesema/review.json`           | The latest review written by the agent.                                     |
-| `.codesema/reviews/`              | Archived reviews (5 kept per branch, used for incremental re-review).         |
-| `.codesema/PROMPT.md`             | Your team's extra review instructions, merged into the prompt.               |
-| `.codesema-ignore`                | Glob patterns excluded from the diff.                                        |
+| Path                             | Contents                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| `~/.config/codesema/config.json` | Global config (language, agent, model, effort, sync credentials), mode `0600`. |
+| `.codesema/config.json`          | Repo config, overrides the global one.                                         |
+| `.codesema/input.json`           | The prepared MR diff handed to the agent (`prep`).                             |
+| `.codesema/review.json`          | The latest review written by the agent.                                        |
+| `.codesema/reviews/`             | Archived reviews (5 kept per branch, used for incremental re-review).          |
+| `.codesema/PROMPT.md`            | Your team's extra review instructions, merged into the prompt.                 |
+| `.codesema-ignore`               | Glob patterns excluded from the diff.                                          |
 
 ## Exit codes
 
-| Code  | Meaning                                                                                        |
-| ----- | ---------------------------------------------------------------------------------------------- |
-| `0`   | Success (review completed; with `--fail-on`, nothing tripped the gate).                        |
-| `1`   | Error (bad invocation, agent failure, unusable output, or a blocked secret sync).              |
+| Code  | Meaning                                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------ |
+| `0`   | Success (review completed; with `--fail-on`, nothing tripped the gate).                          |
+| `1`   | Error (bad invocation, agent failure, unusable output, or a blocked secret sync).                |
 | `2`   | `review --fail-on <level>` gate tripped (a finding at or above the level, or changes requested). |
-| `130` | Interrupted with Ctrl-C.                                                                        |
+| `130` | Interrupted with Ctrl-C.                                                                         |
 
 ## Development
 

@@ -44,11 +44,17 @@ export async function show(opts: {
           timeoutMs: (config.timeout ?? DEFAULT_TIMEOUT_S) * 1000,
         })
       : undefined
-  const { url } = await startServer(session, { port: opts.port ?? config.port, locale: uiLocale(), fixRunner })
+  const { url } = await startServer(session, {
+    port: opts.port ?? config.port,
+    locale: uiLocale(),
+    fixRunner,
+  })
   console.log('')
   console.log(`codesema — ${record.meta.branch} → ${record.meta.target}`)
   console.log(`  ${url}`)
   console.log(`  ${t('review.ctrlc')}`)
-  if (opts.open) {openBrowser(url)}
+  if (opts.open) {
+    openBrowser(url)
+  }
   printUpdateNotice(await latestVersion)
 }

@@ -27,15 +27,21 @@ const props = defineProps<{
   judging: boolean
 }>()
 
-const labelKey = computed(() => (props.kind === 'reviewer' ? 'live.laneReviewer' : 'live.laneProsecutor'))
+const labelKey = computed(() =>
+  props.kind === 'reviewer' ? 'live.laneReviewer' : 'live.laneProsecutor',
+)
 const findings = computed(() => props.partial?.findings ?? [])
-const hasContent = computed(() => findings.value.length > 0 || (props.partial?.stepTitles.length ?? 0) > 0)
+const hasContent = computed(
+  () => findings.value.length > 0 || (props.partial?.stepTitles.length ?? 0) > 0,
+)
 const currentStep = computed(() => props.partial?.stepTitles.at(-1))
 
 const severityCounts = computed(() => {
   const counts: Record<Severity, number> = { critical: 0, major: 0, minor: 0, info: 0 }
   for (const f of findings.value) {
-    if (f.severity && SEVERITIES.has(f.severity as Severity)) {counts[f.severity as Severity]++}
+    if (f.severity && SEVERITIES.has(f.severity as Severity)) {
+      counts[f.severity as Severity]++
+    }
   }
   return counts
 })
@@ -85,7 +91,9 @@ const severityCounts = computed(() => {
   border-radius: 12px;
   padding: 14px 16px;
   min-width: 0;
-  transition: opacity 0.25s ease, padding 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    padding 0.25s ease;
 }
 
 .dlane-root--dim {

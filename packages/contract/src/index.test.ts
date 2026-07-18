@@ -13,9 +13,24 @@ import {
 
 describe('sanitizeReview', () => {
   test('empty input: safe defaults', () => {
-    expect(sanitizeReview({})).toEqual({ verdict: 'comment', summary: '', findings: [], narrative: null })
-    expect(sanitizeReview(null)).toEqual({ verdict: 'comment', summary: '', findings: [], narrative: null })
-    expect(sanitizeReview('junk')).toEqual({ verdict: 'comment', summary: '', findings: [], narrative: null })
+    expect(sanitizeReview({})).toEqual({
+      verdict: 'comment',
+      summary: '',
+      findings: [],
+      narrative: null,
+    })
+    expect(sanitizeReview(null)).toEqual({
+      verdict: 'comment',
+      summary: '',
+      findings: [],
+      narrative: null,
+    })
+    expect(sanitizeReview('junk')).toEqual({
+      verdict: 'comment',
+      summary: '',
+      findings: [],
+      narrative: null,
+    })
   })
 
   test('valid verdicts kept, unknown ones become comment', () => {
@@ -37,7 +52,9 @@ describe('sanitizeReview', () => {
   })
 
   test('files_reviewed: capped at 500 entries', () => {
-    const many = sanitizeReview({ files_reviewed: Array.from({ length: 600 }, (_, i) => `f${i}.ts`) })
+    const many = sanitizeReview({
+      files_reviewed: Array.from({ length: 600 }, (_, i) => `f${i}.ts`),
+    })
     expect(many.files_reviewed?.length).toBe(500)
   })
 })
@@ -49,41 +66,61 @@ describe('sanitizeFindings', () => {
   })
 
   test('unknown severity: info, unknown kind: absent', () => {
-    const [f] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'blocker', kind: 'typo' }])
+    const [f] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'blocker', kind: 'typo' },
+    ])
     expect(f?.severity).toBe('info')
     expect(f?.kind).toBeUndefined()
   })
 
   test('invalid line ignored, endLine < line ignored', () => {
-    const [f] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'minor', line: -3, endLine: 9 }])
+    const [f] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'minor', line: -3, endLine: 9 },
+    ])
     expect(f?.line).toBeUndefined()
     expect(f?.endLine).toBeUndefined()
-    const [g] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'minor', line: 10, endLine: 4 }])
+    const [g] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'minor', line: 10, endLine: 4 },
+    ])
     expect(g?.line).toBe(10)
     expect(g?.endLine).toBeUndefined()
   })
 
   test('consensus kept only when strictly true', () => {
-    const [f] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'minor', consensus: true }])
+    const [f] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'minor', consensus: true },
+    ])
     expect(f?.consensus).toBe(true)
-    const [g] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'minor', consensus: 'yes' }])
+    const [g] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'minor', consensus: 'yes' },
+    ])
     expect(g?.consensus).toBeUndefined()
     const [h] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'minor' }])
     expect(h?.consensus).toBeUndefined()
   })
 
   test('praise and why findings are forced to info severity', () => {
-    const [praise] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'critical', kind: 'praise' }])
+    const [praise] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'critical', kind: 'praise' },
+    ])
     expect(praise?.severity).toBe('info')
     const [why] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'major', kind: 'why' }])
     expect(why?.severity).toBe('info')
-    const [bug] = sanitizeFindings([{ file: 'a.ts', message: 'm', severity: 'critical', kind: 'security' }])
+    const [bug] = sanitizeFindings([
+      { file: 'a.ts', message: 'm', severity: 'critical', kind: 'security' },
+    ])
     expect(bug?.severity).toBe('critical')
   })
 
   test('title/suggestion truncated', () => {
     const [f] = sanitizeFindings([
-      { file: 'a.ts', message: 'm', severity: 'minor', title: 't'.repeat(500), suggestion: 's'.repeat(9000) },
+      {
+        file: 'a.ts',
+        message: 'm',
+        severity: 'minor',
+        title: 't'.repeat(500),
+        suggestion: 's'.repeat(9000),
+      },
     ])
     expect(f?.title?.length).toBe(200)
     expect(f?.suggestion?.length).toBe(4000)
@@ -124,7 +161,11 @@ describe('sanitizeNarrative', () => {
   })
 
   test('review_first: capped at 4, default risk medium, step_ref bounded', () => {
-    const items = Array.from({ length: 6 }, (_, i) => ({ point: `p${i}`, risk: 'weird', step_ref: i }))
+    const items = Array.from({ length: 6 }, (_, i) => ({
+      point: `p${i}`,
+      risk: 'weird',
+      step_ref: i,
+    }))
     const n = sanitizeNarrative({ steps: [{ title: 'Ch' }], review_first: items }, 0)
     expect(n?.review_first).toHaveLength(4)
     expect(n?.review_first[0]).toEqual({ point: 'p0', risk: 'medium', step_ref: 0, file: null })
@@ -151,9 +192,17 @@ describe('sanitizeNarrative', () => {
   })
 
   test('prologue without why/what absent, key_changes capped at 5 and title required', () => {
-    expect(sanitizeNarrative({ steps: [{ title: 'Ch' }], prologue: {} }, 0)?.prologue).toBeUndefined()
+    expect(
+      sanitizeNarrative({ steps: [{ title: 'Ch' }], prologue: {} }, 0)?.prologue,
+    ).toBeUndefined()
     const kcs = Array.from({ length: 7 }, (_, i) => ({ title: `t${i}`, detail: 'd' }))
-    const n = sanitizeNarrative({ steps: [{ title: 'Ch' }], prologue: { why: 'w', key_changes: [...kcs, { detail: 'orphan' }] } }, 0)
+    const n = sanitizeNarrative(
+      {
+        steps: [{ title: 'Ch' }],
+        prologue: { why: 'w', key_changes: [...kcs, { detail: 'orphan' }] },
+      },
+      0,
+    )
     expect(n?.prologue?.key_changes).toHaveLength(5)
   })
 })
@@ -178,7 +227,11 @@ describe('sanitizeRecord', () => {
   })
 
   test('review is sanitized, commits and diff are coerced', () => {
-    const record = sanitizeRecord({ commits: ['a', 2, 'b'], diff: 42, review: { verdict: 'approve' } })
+    const record = sanitizeRecord({
+      commits: ['a', 2, 'b'],
+      diff: 42,
+      review: { verdict: 'approve' },
+    })
     expect(record?.commits).toEqual(['a', 'b'])
     expect(record?.diff).toBe('')
     expect(record?.review.verdict).toBe('approve')
@@ -187,7 +240,9 @@ describe('sanitizeRecord', () => {
   test('dual stats kept when they are non-negative integers, dropped otherwise', () => {
     const dual = { merged: 2, rejected: 1, added_by_b: 3 }
     expect(sanitizeRecord({ meta: { dual } })?.meta.dual).toEqual(dual)
-    expect(sanitizeRecord({ meta: { dual: { merged: -1, rejected: 0, added_by_b: 0 } } })?.meta.dual).toBeUndefined()
+    expect(
+      sanitizeRecord({ meta: { dual: { merged: -1, rejected: 0, added_by_b: 0 } } })?.meta.dual,
+    ).toBeUndefined()
     expect(sanitizeRecord({ meta: { dual: 'yes' } })?.meta.dual).toBeUndefined()
     expect(sanitizeRecord({ meta: {} })?.meta.dual).toBeUndefined()
   })
@@ -209,16 +264,26 @@ describe('detectDiffSecrets', () => {
   })
 
   test('sensitive filenames are flagged, placeholders are not', () => {
-    expect(detectDiffSecrets(diffFor('.env', ['A=1']))).toContainEqual({ file: '.env', reason: 'filename', detail: '.env' })
+    expect(detectDiffSecrets(diffFor('.env', ['A=1']))).toContainEqual({
+      file: '.env',
+      reason: 'filename',
+      detail: '.env',
+    })
     expect(detectDiffSecrets(diffFor('config/db.pem', ['x']))[0]?.reason).toBe('filename')
     expect(detectDiffSecrets(diffFor('service/id_rsa', ['x']))[0]?.reason).toBe('filename')
-    expect(detectDiffSecrets(diffFor('.env.local', ['A=1'])).some((m) => m.reason === 'filename')).toBe(true)
+    expect(
+      detectDiffSecrets(diffFor('.env.local', ['A=1'])).some((m) => m.reason === 'filename'),
+    ).toBe(true)
     expect(detectDiffSecrets(diffFor('.env.example', ['A=1']))).toEqual([])
   })
 
   test('credentials in content are flagged on added and removed lines', () => {
     const added = detectDiffSecrets(diffFor('src/app.ts', ['const k = "AKIAIOSFODNN7EXAMPLE"']))
-    expect(added).toContainEqual({ file: 'src/app.ts', reason: 'content', detail: 'an AWS access key id' })
+    expect(added).toContainEqual({
+      file: 'src/app.ts',
+      reason: 'content',
+      detail: 'an AWS access key id',
+    })
     const removedSecret =
       'diff --git a/src/app.ts b/src/app.ts\n--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-const k = "sk-ant-0123456789ABCDEFGHIJ"\n+const k = readEnv()\n'
     expect(detectDiffSecrets(removedSecret)).toContainEqual({
@@ -234,8 +299,13 @@ describe('detectDiffSecrets', () => {
   })
 
   test('a GNU-style tab suffix on marker lines is stripped from the path', () => {
-    const diff = '--- a/.env\t2026-07-14 00:00:00\n+++ b/.env\t2026-07-14 00:00:00\n@@ -1 +1 @@\n-A=1\n+A=2\n'
-    expect(detectDiffSecrets(diff)).toContainEqual({ file: '.env', reason: 'filename', detail: '.env' })
+    const diff =
+      '--- a/.env\t2026-07-14 00:00:00\n+++ b/.env\t2026-07-14 00:00:00\n@@ -1 +1 @@\n-A=1\n+A=2\n'
+    expect(detectDiffSecrets(diff)).toContainEqual({
+      file: '.env',
+      reason: 'filename',
+      detail: '.env',
+    })
   })
 
   test('a marker line stuffed with tabs and a stray carriage return parses in linear time', () => {
@@ -272,7 +342,10 @@ const GROUND_DIFF = [
   '-c',
 ].join('\n')
 
-function reviewWith(findings: Finding[], overrides: Partial<SanitizedReview> = {}): SanitizedReview {
+function reviewWith(
+  findings: Finding[],
+  overrides: Partial<SanitizedReview> = {},
+): SanitizedReview {
   return { verdict: 'comment', summary: 's', findings, narrative: null, ...overrides }
 }
 
@@ -287,7 +360,9 @@ describe('groundReview', () => {
 
   test('line outside every hunk is de-anchored, finding kept', () => {
     const { review, report } = groundReview(
-      reviewWith([{ file: 'src/auth.ts', line: 99, endLine: 100, severity: 'major', message: 'm' }]),
+      reviewWith([
+        { file: 'src/auth.ts', line: 99, endLine: 100, severity: 'major', message: 'm' },
+      ]),
       GROUND_DIFF,
     )
     expect(review.findings).toEqual([{ file: 'src/auth.ts', severity: 'major', message: 'm' }])
@@ -332,8 +407,20 @@ describe('groundReview', () => {
     const { review, report } = groundReview(
       reviewWith([
         { file: 'src/auth.ts', line: 11, severity: 'minor', kind: 'security', message: 'first' },
-        { file: 'src/auth.ts', line: 11, severity: 'critical', kind: 'security', message: 'louder duplicate' },
-        { file: 'src/auth.ts', line: 11, severity: 'minor', kind: 'perf', message: 'different kind, kept' },
+        {
+          file: 'src/auth.ts',
+          line: 11,
+          severity: 'critical',
+          kind: 'security',
+          message: 'louder duplicate',
+        },
+        {
+          file: 'src/auth.ts',
+          line: 11,
+          severity: 'minor',
+          kind: 'perf',
+          message: 'different kind, kept',
+        },
       ]),
       GROUND_DIFF,
     )
@@ -347,7 +434,14 @@ describe('groundReview', () => {
     const { review } = groundReview(
       reviewWith([
         { file: 'src/auth.ts', line: 11, severity: 'major', kind: 'design', message: 'first' },
-        { file: 'src/auth.ts', line: 11, severity: 'minor', kind: 'design', message: 'duplicate', consensus: true },
+        {
+          file: 'src/auth.ts',
+          line: 11,
+          severity: 'minor',
+          kind: 'design',
+          message: 'duplicate',
+          consensus: true,
+        },
       ]),
       GROUND_DIFF,
     )
@@ -387,7 +481,13 @@ describe('groundReview', () => {
         [
           { file: 'src/ghost.ts', severity: 'major', message: 'dropped' },
           { file: 'src/auth.ts', line: 11, severity: 'minor', kind: 'perf', message: 'kept first' },
-          { file: 'src/auth.ts', line: 11, severity: 'minor', kind: 'perf', message: 'merged into 1' },
+          {
+            file: 'src/auth.ts',
+            line: 11,
+            severity: 'minor',
+            kind: 'perf',
+            message: 'merged into 1',
+          },
           { file: 'src/auth.ts', line: 43, severity: 'minor', message: 'kept last' },
         ],
         { narrative },
@@ -400,7 +500,9 @@ describe('groundReview', () => {
 
   test('approve with a surviving critical finding escalates to request_changes', () => {
     const { review, report } = groundReview(
-      reviewWith([{ file: 'src/auth.ts', line: 11, severity: 'critical', message: 'm' }], { verdict: 'approve' }),
+      reviewWith([{ file: 'src/auth.ts', line: 11, severity: 'critical', message: 'm' }], {
+        verdict: 'approve',
+      }),
       GROUND_DIFF,
     )
     expect(review.verdict).toBe('request_changes')
@@ -409,7 +511,9 @@ describe('groundReview', () => {
 
   test('approve stays approve when the only critical finding was dropped', () => {
     const { review, report } = groundReview(
-      reviewWith([{ file: 'src/ghost.ts', severity: 'critical', message: 'm' }], { verdict: 'approve' }),
+      reviewWith([{ file: 'src/ghost.ts', severity: 'critical', message: 'm' }], {
+        verdict: 'approve',
+      }),
       GROUND_DIFF,
     )
     expect(review.verdict).toBe('approve')
@@ -417,7 +521,9 @@ describe('groundReview', () => {
   })
 
   test('unparseable diff: review returned unchanged', () => {
-    const findings: Finding[] = [{ file: 'src/ghost.ts', line: 1, severity: 'critical', message: 'm' }]
+    const findings: Finding[] = [
+      { file: 'src/ghost.ts', line: 1, severity: 'critical', message: 'm' },
+    ]
     const input = reviewWith(findings, { verdict: 'approve' })
     const { review, report } = groundReview(input, 'not a diff at all')
     expect(review).toEqual(input)
@@ -435,20 +541,29 @@ describe('reviewRecordSchema', () => {
   test('every $ref resolves to a defined $def', () => {
     const refs: string[] = []
     const walk = (node: unknown): void => {
-      if (!node || typeof node !== 'object') {return}
+      if (!node || typeof node !== 'object') {
+        return
+      }
       for (const [key, value] of Object.entries(node)) {
-        if (key === '$ref' && typeof value === 'string') {refs.push(value)}
-        else {walk(value)}
+        if (key === '$ref' && typeof value === 'string') {
+          refs.push(value)
+        } else {
+          walk(value)
+        }
       }
     }
     walk(reviewRecordSchema)
     const defs = new Set(Object.keys(reviewRecordSchema.$defs))
     expect(refs.length).toBeGreaterThan(0)
-    for (const ref of refs) {expect(defs.has(ref.replace('#/$defs/', ''))).toBe(true)}
+    for (const ref of refs) {
+      expect(defs.has(ref.replace('#/$defs/', ''))).toBe(true)
+    }
   })
 
   test('top-level required keys all exist in properties', () => {
     const props = new Set(Object.keys(reviewRecordSchema.properties))
-    for (const key of reviewRecordSchema.required) {expect(props.has(key)).toBe(true)}
+    for (const key of reviewRecordSchema.required) {
+      expect(props.has(key)).toBe(true)
+    }
   })
 })

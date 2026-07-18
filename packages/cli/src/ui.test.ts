@@ -13,11 +13,15 @@ describe('progressLabel', () => {
   })
 
   test('verdict alone', () => {
-    expect(progressLabel({ ...empty, verdict: 'approve' })).toBe('verdict approve · drafting findings')
+    expect(progressLabel({ ...empty, verdict: 'approve' })).toBe(
+      'verdict approve · drafting findings',
+    )
   })
 
   test('findings win over verdict', () => {
-    expect(progressLabel({ ...empty, verdict: 'comment', findings: [finding, finding] })).toBe('2 findings drafted')
+    expect(progressLabel({ ...empty, verdict: 'comment', findings: [finding, finding] })).toBe(
+      '2 findings drafted',
+    )
   })
 
   test('singular finding', () => {
@@ -85,8 +89,11 @@ describe('renderFieldRows', () => {
       expect(stripAnsi(lines[1]!)).toBe(`  ${'changes'.padEnd(10)}3 files`)
     } finally {
       process.stdout.isTTY = originalIsTTY
-      if (originalNoColor === undefined) {delete process.env.NO_COLOR}
-      else {process.env.NO_COLOR = originalNoColor}
+      if (originalNoColor === undefined) {
+        delete process.env.NO_COLOR
+      } else {
+        process.env.NO_COLOR = originalNoColor
+      }
     }
   })
 })

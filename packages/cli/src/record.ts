@@ -1,13 +1,24 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { join } from 'node:path'
-import type { ReviewRecord } from './contract.js'
-import { sanitizeRecord } from './contract.js'
+import { sanitizeRecord, type ReviewRecord } from './contract.js'
 import { t } from './i18n.js'
 
 const ARCHIVES_KEPT_PER_BRANCH = 5
 
 function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'review'
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'review'
+  )
 }
 
 function stamp(d: Date): string {
@@ -75,15 +86,23 @@ function buildRecord(agentOutputPath: string, dir: string): ReviewRecord {
 }
 
 function latestSavedRecord(reviewsDir: string): { record: ReviewRecord; path: string } | null {
-  if (!existsSync(reviewsDir)) {return null}
-  const names = readdirSync(reviewsDir).filter((n) => n.endsWith('.json')).toSorted()
+  if (!existsSync(reviewsDir)) {
+    return null
+  }
+  const names = readdirSync(reviewsDir)
+    .filter((n) => n.endsWith('.json'))
+    .toSorted()
   for (let i = names.length - 1; i >= 0; i--) {
     const name = names[i]
-    if (!name) {continue}
+    if (!name) {
+      continue
+    }
     const path = join(reviewsDir, name)
     try {
       const record = sanitizeRecord(readJson(path))
-      if (record) {return { record, path }}
+      if (record) {
+        return { record, path }
+      }
     } catch {
       // unreadable archive: fall back to the previous one
     }
@@ -92,9 +111,15 @@ function latestSavedRecord(reviewsDir: string): { record: ReviewRecord; path: st
 }
 
 /** Last archived review of this branch to this target, with a known head_sha. */
-export function findPreviousReview(cwd: string, branch: string, target: string): ReviewRecord | null {
+export function findPreviousReview(
+  cwd: string,
+  branch: string,
+  target: string,
+): ReviewRecord | null {
   const reviewsDir = join(cwd, '.codesema', 'reviews')
-  if (!existsSync(reviewsDir)) {return null}
+  if (!existsSync(reviewsDir)) {
+    return null
+  }
   const names = archiveNames(reviewsDir, slug(branch)).toReversed()
   for (const name of names) {
     try {
